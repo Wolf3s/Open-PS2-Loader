@@ -36,6 +36,8 @@ DTL_T10000 ?= 0
 #Nor stripping neither compressing binary ELF after compiling.
 NOT_PACKED ?= 0
 
+SMB2 ?= 0
+
 # ======== END OF CONFIGURABLE SECTION. DO NOT MODIFY VARIABLES AFTER THIS POINT!! ========
 DEBUG ?= 0
 EESIO_DEBUG ?= 0
@@ -65,7 +67,7 @@ endif
 
 FRONTEND_OBJS = pad.o xparam.o fntsys.o renderman.o menusys.o OSDHistory.o system.o lang.o lang_internal.o config.o hdd.o dialogs.o \
 		dia.o ioman.o texcache.o themes.o supportbase.o bdmsupport.o ethsupport.o hddsupport.o zso.o lz4.o \
-		appsupport.o gui.o guigame.o textures.o opl.o atlas.o nbns.o httpclient.o gsm.o cheatman.o sound.o ps2cnf.o
+		appsupport.o gui.o guigame.o textures.o opl.o atlas.o nbns.o httpclient.o gsm.o cheatman.o sound.o ps2cnf.o 
 
 IOP_OBJS =	iomanx.o filexio.o ps2fs.o usbd.o bdmevent.o \
 		bdm.o bdmfs_fatfs.o usbmass_bd.o iLinkman.o IEEE1394_bd.o mx4sio_bd.o \
@@ -81,6 +83,10 @@ EECORE_OBJS = ee_core.o ioprp.o util.o imgdrv.o eesync.o \
 		bdm_cdvdman.o IOPRP_img.o smb_cdvdman.o \
 		hdd_cdvdman.o hdd_hdpro_cdvdman.o cdvdfsv.o \
 		ingame_smstcpip.o smap_ingame.o smbman.o smbinit.o
+
+ifeq ($(SMB2),1)
+EECORE_OBJS = smb2man.o
+endif
 
 PNG_ASSETS = load0 load1 load2 load3 load4 load5 load6 load7 usb usb_bd ilk_bd \
 	m4s_bd hdd eth app cross triangle circle square select start left right up down \
@@ -185,6 +191,10 @@ ifeq ($(DEBUG),1)
 else
   EE_CFLAGS += -O2
   SMSTCPIP_INGAME_CFLAGS = INGAME_DRIVER=1
+endif
+
+ifeq ($(SMB2),1)
+  EE_CFLAGS += -D__SMB2__
 endif
 
 EE_CFLAGS += -fsingle-precision-constant -DOPL_VERSION=\"$(OPL_VERSION)\"
@@ -569,6 +579,11 @@ $(EE_ASM_DIR)ps2ips.c: $(PS2SDK)/iop/irx/ps2ips.irx | $(EE_ASM_DIR)
 
 $(EE_ASM_DIR)smbman.c: $(PS2SDK)/iop/irx/smbman.irx | $(EE_ASM_DIR)
 	$(BIN2C) $< $@ $(*F)_irx
+
+ifeq ($(SMB2),1)
+$(EE_ASM_DIR)smb2man.c: $(PS2SDK)/iop/irx/smb2man.irx | $(EE_ASM_DIR)
+	$(BIN2C) $< $@ $(*F)_irx
+endif
 
 modules/network/smbinit/smbinit.irx: modules/network/smbinit
 	$(MAKE) -C $<

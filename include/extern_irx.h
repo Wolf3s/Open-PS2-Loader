@@ -116,6 +116,10 @@ IMPORT_BIN2C(smbinit_irx);
 
 IMPORT_BIN2C(smbman_irx);
 
+#ifdef __SMB2__
+IMPORT_BIN2C(smb2man_irx);
+#endif
+
 IMPORT_BIN2C(smsutils_irx);
 
 IMPORT_BIN2C(tifinet_irx);

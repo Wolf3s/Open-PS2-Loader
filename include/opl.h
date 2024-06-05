@@ -36,6 +36,9 @@
 #include <smem.h>
 #include <debug.h>
 #include <ps2smb.h>
+#ifdef __SMB2__
+#include <ps2smb2.h>
+#endif
 #include "config.h"
 
 #include "include/hddsupport.h"

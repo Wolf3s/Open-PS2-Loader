@@ -410,6 +410,19 @@ static void smbLoadModules(void)
             ethInitSMB();
             return;
         }
+
+#ifdef __SMB2__
+        LOG("[SMB2MAN]:\n");
+        if (sysLoadModuleBuffer(&smb2man_irx, size_smb2man_irx, 0, NULL) >= 0) {
+            LOG("[NBNS]:\n");
+            sysLoadModuleBuffer(&nbns_irx, size_nbns_irx, 0, NULL);
+            nbnsInit();
+
+            /*LOG("SMB2SUPPORT Modules loaded\n");
+            ethInitSMB();*/
+            return;
+        }
+#endif
     }
 
     ethDisplayErrorStatus();
