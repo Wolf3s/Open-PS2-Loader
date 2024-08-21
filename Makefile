@@ -79,14 +79,14 @@ IOP_OBJS =	iomanx.o filexio.o ps2fs.o usbd.o bdmevent.o \
 		iremsndpatch.o apemodpatch.o f2techioppatch.o cleareffects.o resetspu.o \
 		libsd.o audsrv.o
 
+ifeq ($(SMB2),1)
+SMB2_IRX_OBJS = smb2man.o
+endif
+
 EECORE_OBJS = ee_core.o ioprp.o util.o imgdrv.o eesync.o \
 		bdm_cdvdman.o IOPRP_img.o smb_cdvdman.o \
 		hdd_cdvdman.o hdd_hdpro_cdvdman.o cdvdfsv.o \
-		ingame_smstcpip.o smap_ingame.o smbman.o smbinit.o
-
-ifeq ($(SMB2),1)
-EECORE_OBJS = smb2man.o
-endif
+		ingame_smstcpip.o smap_ingame.o smbman.o smbinit.o $(SMB2_IRX_OBJS)
 
 PNG_ASSETS = load0 load1 load2 load3 load4 load5 load6 load7 usb usb_bd ilk_bd \
 	m4s_bd hdd eth app cross triangle circle square select start left right \
@@ -123,6 +123,10 @@ PNG_ASSETS_DIR = gfx/
 MAPFILE = opl.map
 EE_LDFLAGS += -Wl,-Map,$(MAPFILE)
 
+ifeq ($(SMB2),1)
+  EE_LIBS = -lsmb2_rpc
+endif
+
 EE_LIBS = -L$(PS2SDK)/ports/lib -L$(GSKIT)/lib -L./lib -lgskit -ldmakit -lgskit_toolkit -lpoweroff -lfileXio -lpatches -ljpeg_ps2_addons -ljpeg -lpng -lz -lmc -lfreetype -lvux -lcdvd -lnetman -lps2ips -laudsrv -lvorbisfile -lvorbis -logg -lpadx -lelf-loader-nocolour
 EE_INCS += -I$(PS2SDK)/ports/include -I$(PS2SDK)/ports/include/freetype2 -I$(GSKIT)/include -I$(GSKIT)/ee/dma/include -I$(GSKIT)/ee/gs/include -I$(GSKIT)/ee/toolkit/include -Imodules/iopcore/common -Imodules/network/common -Imodules/hdd/common -Iinclude
 
@@ -130,6 +134,10 @@ BIN2C = $(PS2SDK)/bin/bin2c
 
 # WARNING: Only extra spaces are allowed and ignored at the beginning of the conditional directives (ifeq, ifneq, ifdef, ifndef, else and endif)
 # but a tab is not allowed; if the line begins with a tab, it will be considered part of a recipe for a rule!
+
+ifeq ($(SMB2),1)
+  EE_CFLAGS += -D__SMB2__
+endif
 
 ifeq ($(RTL),1)
   EE_CFLAGS += -D__RTL
@@ -193,10 +201,6 @@ ifeq ($(DEBUG),1)
 else
   EE_CFLAGS += -O2
   SMSTCPIP_INGAME_CFLAGS = INGAME_DRIVER=1
-endif
-
-ifeq ($(SMB2),1)
-  EE_CFLAGS += -D__SMB2__
 endif
 
 EE_CFLAGS += -fsingle-precision-constant -DOPL_VERSION=\"$(OPL_VERSION)\"
@@ -583,7 +587,7 @@ $(EE_ASM_DIR)smbman.c: $(PS2SDK)/iop/irx/smbman.irx | $(EE_ASM_DIR)
 	$(BIN2C) $< $@ $(*F)_irx
 
 ifeq ($(SMB2),1)
-$(EE_ASM_DIR)smb2man.c: $(PS2SDK)/iop/irx/smb2man.irx | $(EE_ASM_DIR)
+$(EE_ASM_DIR)smb2man.c: $(PS2SDK)/ports_iop/irx/smb2man.irx | $(EE_ASM_DIR)
 	$(BIN2C) $< $@ $(*F)_irx
 endif
 
