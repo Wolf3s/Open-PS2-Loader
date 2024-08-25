@@ -36,7 +36,7 @@ DTL_T10000 ?= 0
 #Nor stripping neither compressing binary ELF after compiling.
 NOT_PACKED ?= 0
 
-SMB2 ?= 0
+SMB2 ?= 1
 
 # ======== END OF CONFIGURABLE SECTION. DO NOT MODIFY VARIABLES AFTER THIS POINT!! ========
 DEBUG ?= 0
