@@ -11,13 +11,21 @@
 
 IRX_ID("ds34usb", 1, 1);
 
-//#define DPRINTF(x...) printf(x)
-#define DPRINTF(x...)
+#define DPRINTF(x...) printf(x)
+//#define DPRINTF(x...)
 
 #define REQ_USB_OUT (USB_DIR_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE)
 #define REQ_USB_IN  (USB_DIR_IN | USB_TYPE_CLASS | USB_RECIP_INTERFACE)
 
 #define MAX_PADS 2
+
+enum eUSBCallback {
+    USB_CALLBACK_NOP,
+    USB_CALLBACK_INIT1,  // done during usb_connect
+    USB_CALLBACK_INIT2,  // ds3 special initialization
+    USB_CALLBACK_INIT3,  // rumble/leds initialization
+    USB_CALLBACK_SIGNAL, // signal requesting task
+};
 
 static u8 output_01_report[] =
     {
@@ -66,14 +74,11 @@ static int usb_connect(int devId);
 static int usb_disconnect(int devId);
 
 static void usb_release(int pad);
-static void usb_config_set(int result, int count, void *arg);
+static void usb_callback(int result, int count, void *arg);
 
 static UsbDriver usb_driver = {NULL, NULL, "ds34usb", usb_probe, usb_connect, usb_disconnect};
 
-static void DS3USB_init(int pad);
-static void readReport(u8 *data, int pad);
 static int LEDRumble(u8 *led, u8 lrum, u8 rrum, int pad);
-static int Rumble(u8 lrum, u8 rrum, int pad);
 
 static ds34usb_device ds34pad[MAX_PADS];
 
@@ -115,7 +120,7 @@ static int usb_connect(int devId)
         return 1;
     }
 
-    PollSema(ds34pad[pad].sema);
+    WaitSema(ds34pad[pad].sema);
 
     ds34pad[pad].devId = devId;
 
@@ -154,14 +159,15 @@ static int usb_connect(int devId)
     } while (epCount--);
 
     if (ds34pad[pad].interruptEndp < 0 || ds34pad[pad].outEndp < 0) {
+        SignalSema(ds34pad[pad].sema);		
         usb_release(pad);
         return 1;
     }
 
     ds34pad[pad].status |= DS34USB_STATE_CONNECTED;
 
-    UsbSetDeviceConfiguration(ds34pad[pad].controlEndp, config->bConfigurationValue, usb_config_set, (void *)pad);
-    SignalSema(ds34pad[pad].sema);
+    ds34pad[pad].usb_cb = USB_CALLBACK_INIT1;
+    UsbSetDeviceConfiguration(ds34pad[pad].controlEndp, config->bConfigurationValue, usb_callback, (void *)pad);
 
     return 0;
 }
@@ -185,7 +191,7 @@ static int usb_disconnect(int devId)
 
 static void usb_release(int pad)
 {
-    PollSema(ds34pad[pad].sema);
+    WaitSema(ds34pad[pad].sema);
 
     if (ds34pad[pad].interruptEndp >= 0)
         UsbCloseEndpoint(ds34pad[pad].interruptEndp);
@@ -202,43 +208,25 @@ static void usb_release(int pad)
     SignalSema(ds34pad[pad].sema);
 }
 
-static int usb_resulCode;
-
-static void usb_data_cb(int resultCode, int bytes, void *arg)
+static void init_ds3(int pad)
 {
-    int pad = (int)arg;
-
-    // DPRINTF("DS34USB: usb_data_cb: res %d, bytes %d, arg %p \n", resultCode, bytes, arg);
-
-    usb_resulCode = resultCode;
-
-    SignalSema(ds34pad[pad].sema);
+    usb_buf[0] = 0x42;
+    usb_buf[1] = 0x0c;
+    usb_buf[2] = 0x00;
+    usb_buf[3] = 0x00;
+    UsbControlTransfer(ds34pad[pad].controlEndp, REQ_USB_OUT, USB_REQ_SET_REPORT, (HID_USB_GET_REPORT_FEATURE << 8) | 0xF4, 0, 4, usb_buf, usb_callback, (void *)pad);
 }
 
-static void usb_cmd_cb(int resultCode, int bytes, void *arg)
+static void init_led_rumble(int pad)
 {
-    int pad = (int)arg;
-
-    // DPRINTF("DS34USB: usb_cmd_cb: res %d, bytes %d, arg %p \n", resultCode, bytes, arg);
-
-    SignalSema(ds34pad[pad].cmd_sema);
-}
-
-static void usb_config_set(int result, int count, void *arg)
-{
-    int pad = (int)arg;
+    ds34usb_device *ppad = &ds34pad[pad];
     u8 led[4];
 
-    PollSema(ds34pad[pad].sema);
-
-    ds34pad[pad].status |= DS34USB_STATE_CONFIGURED;
-
-    if (ds34pad[pad].type == DS3) {
-        DS3USB_init(pad);
+    if (ppad->type == DS3) {
         DelayThread(10000);
         led[0] = led_patterns[pad][1];
         led[3] = 0;
-    } else if (ds34pad[pad].type == DS4) {
+    } else if (ppad->type == DS4) {
         led[0] = rgbled_patterns[pad][1][0];
         led[1] = rgbled_patterns[pad][1][1];
         led[2] = rgbled_patterns[pad][1][2];
@@ -246,22 +234,44 @@ static void usb_config_set(int result, int count, void *arg)
     }
 
     LEDRumble(led, 0, 0, pad);
-    DelayThread(20000);
-
-    ds34pad[pad].status |= DS34USB_STATE_RUNNING;
-
-    SignalSema(ds34pad[pad].sema);
 }
 
-static void DS3USB_init(int pad)
+static void usb_callback(int result, int count, void *arg)
 {
-    usb_buf[0] = 0x42;
-    usb_buf[1] = 0x0c;
-    usb_buf[2] = 0x00;
-    usb_buf[3] = 0x00;
+    int pad = (int)arg;
+    ds34usb_device *ppad = &ds34pad[pad];
 
-    UsbControlTransfer(ds34pad[pad].controlEndp, REQ_USB_OUT, USB_REQ_SET_REPORT, (HID_USB_GET_REPORT_FEATURE << 8) | 0xF4, 0, 4, usb_buf, NULL, NULL);
+    if (result != USB_RC_OK) {
+        DPRINTF("DS34USB: %s usb transfer error 0x%02X\n", __FUNCTION__, result);
+    }
+
+    switch (ppad->usb_cb) {
+        case USB_CALLBACK_INIT1:
+            ppad->status |= DS34USB_STATE_CONFIGURED;
+            if (ppad->type == DS3) {
+                ppad->usb_cb = USB_CALLBACK_INIT2;
+                init_ds3(pad);
+                break;
+            }
+            // DS4 fall through
+        case USB_CALLBACK_INIT2:
+            ppad->usb_cb = USB_CALLBACK_INIT3;
+            init_led_rumble(pad);
+            break;
+        case USB_CALLBACK_INIT3:
+            ppad->usb_cb = USB_CALLBACK_SIGNAL;
+            ppad->status |= DS34USB_STATE_RUNNING;
+            SignalSema(ppad->sema);
+            break;
+        case USB_CALLBACK_SIGNAL:
+            SignalSema(ppad->cmd_sema);
+            break;
+        default:
+            DPRINTF("DS34USB: %s invalud state %d\n", __FUNCTION__, ppad->usb_cb);
+            break;
+    };
 }
+
 
 static void readReport(u8 *data, int pad)
 {
@@ -409,8 +419,6 @@ static int LEDRumble(u8 *led, u8 lrum, u8 rrum, int pad)
 {
     int ret = 0;
 
-    PollSema(ds34pad[pad].cmd_sema);
-
     mips_memset(usb_buf, 0, sizeof(usb_buf));
 
     if (ds34pad[pad].type == DS3) {
@@ -430,7 +438,7 @@ static int LEDRumble(u8 *led, u8 lrum, u8 rrum, int pad)
             usb_buf[28] = 0x32;
         }
 
-        ret = UsbControlTransfer(ds34pad[pad].controlEndp, REQ_USB_OUT, USB_REQ_SET_REPORT, (HID_USB_SET_REPORT_OUTPUT << 8) | 0x01, 0, sizeof(output_01_report), usb_buf, usb_cmd_cb, (void *)pad);
+        ret = UsbControlTransfer(ds34pad[pad].controlEndp, REQ_USB_OUT, USB_REQ_SET_REPORT, (HID_USB_SET_REPORT_OUTPUT << 8) | 0x01, 0, sizeof(output_01_report), usb_buf, usb_callback, (void *)pad);
     } else if (ds34pad[pad].type == DS4) {
         usb_buf[0] = 0x05;
         usb_buf[1] = 0xFF;
@@ -447,7 +455,7 @@ static int LEDRumble(u8 *led, u8 lrum, u8 rrum, int pad)
             usb_buf[10] = 0x80; // Time to flash dark (255 = 2.5 seconds)
         }
 
-        ret = UsbInterruptTransfer(ds34pad[pad].outEndp, usb_buf, 32, usb_cmd_cb, (void *)pad);
+        ret = UsbInterruptTransfer(ds34pad[pad].outEndp, usb_buf, 32, usb_callback, (void *)pad);
     }
 
     ds34pad[pad].oldled[0] = led[0];
@@ -461,40 +469,21 @@ static int LEDRumble(u8 *led, u8 lrum, u8 rrum, int pad)
     return ret;
 }
 
-static unsigned int timeout(void *arg)
-{
-    int sema = (int)arg;
-    iSignalSema(sema);
-    return 0;
-}
-
-static void TransferWait(int sema)
-{
-    iop_sys_clock_t cmd_timeout;
-
-    cmd_timeout.lo = 200000;
-    cmd_timeout.hi = 0;
-
-    if (SetAlarm(&cmd_timeout, timeout, (void *)sema) == 0) {
-        WaitSema(sema);
-        CancelAlarm(timeout, NULL);
-    }
-}
-
 static int LEDRUM(u8 *led, u8 lrum, u8 rrum, int pad)
 {
     int ret = 0;
 
     WaitSema(ds34pad[pad].sema);
 
-    if (ds34pad[pad].update_rum) {
-        ret = LEDRumble(led, lrum, rrum, pad);
-
-        if (ret == USB_RC_OK)
-            TransferWait(ds34pad[pad].cmd_sema);
-        else
-            DPRINTF("DS34USB: LEDRUM usb transfer error 0x%02X\n", ret);
+    if (ds34pad[pad].status == DS34USB_STATE_DISCONNECTED) {
+        SignalSema(ds34pad[pad].sema);
+        return -1;
     }
+
+    WaitSema(ds34pad[pad].cmd_sema);
+    ret = LEDRumble(led, lrum, rrum, pad);
+    if (ret != USB_RC_OK)
+        DPRINTF("DS34USB: %s usb transfer error 0x%02X\n", __FUNCTION__, ret);
 
     SignalSema(ds34pad[pad].sema);
 
@@ -535,22 +524,22 @@ static void ds34usb_get_data(char *dst, int size, int pad)
         return;
 
     WaitSema(ds34pad[pad].sema);
+    if (ds34pad[pad].status == DS34USB_STATE_DISCONNECTED) {
+        SignalSema(ds34pad[pad].sema);
+        return;
+    }
 
-    PollSema(ds34pad[pad].sema);
-
-    ret = UsbInterruptTransfer(ds34pad[pad].interruptEndp, usb_buf, MAX_BUFFER_SIZE, usb_data_cb, (void *)pad);
+    WaitSema(ds34pad[pad].cmd_sema);
+    ret = UsbInterruptTransfer(ds34pad[pad].interruptEndp, usb_buf, MAX_BUFFER_SIZE, usb_callback, (void *)pad);
 
     if (ret == USB_RC_OK) {
-        TransferWait(ds34pad[pad].sema);
-        if (!usb_resulCode)
-            readReport(usb_buf, pad);
-
-        usb_resulCode = 1;
+        WaitSema(ds34pad[pad].cmd_sema);
+        readReport(usb_buf, pad);
+        mips_memcpy(dst, ds34pad[pad].data, size);
+        SignalSema(ds34pad[pad].cmd_sema);
     } else {
         DPRINTF("DS34USB: ds34usb_get_data usb transfer error %d\n", ret);
     }
-
-    mips_memcpy(dst, ds34pad[pad].data, size);
 
     SignalSema(ds34pad[pad].sema);
 }
@@ -562,23 +551,23 @@ static int ds34usb_get_bdaddr(u8 *data, int pad)
     if (pad >= MAX_PADS)
         return 0;
 
-    if (ds34pad[pad].update_rum) {
-        ds34pad[pad].update_rum = 0;
-        return 0;
+    WaitSema(ds34pad[pad].sema);
+    if (ds34pad[pad].status == DS34USB_STATE_DISCONNECTED) {
+        SignalSema(ds34pad[pad].sema);
+        return -1;
     }
 
-    WaitSema(ds34pad[pad].sema);
-
-    PollSema(ds34pad[pad].cmd_sema);
+    WaitSema(ds34pad[pad].cmd_sema);
 
     if (ds34pad[pad].type == DS3) {
-        ret = UsbControlTransfer(ds34pad[pad].controlEndp, REQ_USB_IN, USB_REQ_GET_REPORT, (HID_USB_GET_REPORT_FEATURE << 8) | 0xF5, 0, 8, usb_buf, usb_cmd_cb, (void *)pad);
+        ret = UsbControlTransfer(ds34pad[pad].controlEndp, REQ_USB_IN, USB_REQ_GET_REPORT, (HID_USB_GET_REPORT_FEATURE << 8) | 0xF5, 0, 8, usb_buf, usb_callback, (void *)pad);
 
         if (ret == USB_RC_OK) {
-            TransferWait(ds34pad[pad].cmd_sema);
+            WaitSema(ds34pad[pad].cmd_sema);
 
             for (i = 0; i < 6; i++)
                 data[5 - i] = usb_buf[2 + i];
+            SignalSema(ds34pad[pad].cmd_sema);			
 
             ret = 1;
         } else {
@@ -586,14 +575,14 @@ static int ds34usb_get_bdaddr(u8 *data, int pad)
             ret = 0;
         }
     } else {
-        ret = UsbControlTransfer(ds34pad[pad].controlEndp, REQ_USB_IN, USB_REQ_GET_REPORT, (HID_USB_GET_REPORT_FEATURE << 8) | 0x12, 0, 16, usb_buf, usb_cmd_cb, (void *)pad);
+        ret = UsbControlTransfer(ds34pad[pad].controlEndp, REQ_USB_IN, USB_REQ_GET_REPORT, (HID_USB_GET_REPORT_FEATURE << 8) | 0x12, 0, 16, usb_buf, usb_callback, (void *)pad);
 
         if (ret == USB_RC_OK) {
-            TransferWait(ds34pad[pad].cmd_sema);
+            WaitSema(ds34pad[pad].cmd_sema);
 
             for (i = 0; i < 6; i++)
                 data[5 - i] = usb_buf[15 - i];
-
+            SignalSema(ds34pad[pad].cmd_sema);
             ret = 1;
         } else {
             DPRINTF("DS34USB: ds3usb_get_bdaddr usb transfer error %d\n", ret);
@@ -615,8 +604,12 @@ static void ds34usb_set_bdaddr(u8 *data, int pad)
         return;
 
     WaitSema(ds34pad[pad].sema);
+    if (ds34pad[pad].status == DS34USB_STATE_DISCONNECTED) {
+        SignalSema(ds34pad[pad].sema);
+        return;
+    }
 
-    PollSema(ds34pad[pad].cmd_sema);
+    WaitSema(ds34pad[pad].cmd_sema);
 
     if (ds34pad[pad].type == DS3) {
         usb_buf[0] = 0x01;
@@ -625,7 +618,7 @@ static void ds34usb_set_bdaddr(u8 *data, int pad)
         for (i = 0; i < 6; i++)
             usb_buf[i + 2] = data[5 - i];
 
-        ret = UsbControlTransfer(ds34pad[pad].controlEndp, REQ_USB_OUT, USB_REQ_SET_REPORT, (HID_USB_GET_REPORT_FEATURE << 8) | 0xF5, 0, 8, usb_buf, usb_cmd_cb, (void *)pad);
+        ret = UsbControlTransfer(ds34pad[pad].controlEndp, REQ_USB_OUT, USB_REQ_SET_REPORT, (HID_USB_GET_REPORT_FEATURE << 8) | 0xF5, 0, 8, usb_buf, usb_callback, (void *)pad);
     } else {
         usb_buf[0] = 0x13;
 
@@ -635,12 +628,10 @@ static void ds34usb_set_bdaddr(u8 *data, int pad)
         for (i = 0; i < sizeof(link_key); i++)
             usb_buf[i + 7] = link_key[i];
 
-        ret = UsbControlTransfer(ds34pad[pad].controlEndp, REQ_USB_OUT, USB_REQ_SET_REPORT, (HID_USB_GET_REPORT_FEATURE << 8) | 0x13, 0, 24, usb_buf, usb_cmd_cb, (void *)pad);
+        ret = UsbControlTransfer(ds34pad[pad].controlEndp, REQ_USB_OUT, USB_REQ_SET_REPORT, (HID_USB_GET_REPORT_FEATURE << 8) | 0x13, 0, 24, usb_buf, usb_callback, (void *)pad);
     }
 
     if (ret == USB_RC_OK)
-        TransferWait(ds34pad[pad].cmd_sema);
-    else
         DPRINTF("DS34USB: ds3usb_set_bdaddr usb transfer error %d\n", ret);
 
     SignalSema(ds34pad[pad].sema);
@@ -750,6 +741,7 @@ int _start(int argc, char *argv[])
     }
 
     for (pad = 0; pad < MAX_PADS; pad++) {
+        ds34pad[pad].usb_cb = USB_CALLBACK_NOP;
         ds34pad[pad].status = 0;
         ds34pad[pad].devId = -1;
         ds34pad[pad].oldled[0] = 0;

@@ -18,6 +18,7 @@ typedef struct _usb_ds34
     int controlEndp;
     int interruptEndp;
     int outEndp;
+    u8 usb_cb;	
     u8 status;
     u8 enabled;
     u8 lrum;
