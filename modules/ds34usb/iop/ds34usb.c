@@ -511,71 +511,71 @@ static int Rumble(u8 lrum, u8 rrum, int pad)
     return LEDRUM(ds34pad[pad].oldled, lrum, rrum, pad);
 }
 
-void ds34usb_set_rumble(u8 lrum, u8 rrum, int port)
+void ds34usb_set_rumble(u8 lrum, u8 rrum, int pad)
 {
-    if (port >= MAX_PADS)
+    if (pad >= MAX_PADS)
         return;
 
-    Rumble(lrum, rrum, port);
+    Rumble(lrum, rrum, pad);
 }
 
-void ds34usb_set_led(u8 *led, int port)
+void ds34usb_set_led(u8 *led, int pad)
 {
-    if (port >= MAX_PADS)
+    if (pad >= MAX_PADS)
         return;
 
-    LED(led, port);
+    LED(led, pad);
 }
 
-void ds34usb_get_data(char *dst, int size, int port)
+void ds34usb_get_data(char *dst, int size, int pad)
 {
     int ret;
 
-    if (port >= MAX_PADS)
+    if (pad >= MAX_PADS)
         return;
 
-    WaitSema(ds34pad[port].sema);
+    WaitSema(ds34pad[pad].sema);
 
-    PollSema(ds34pad[port].sema);
+    PollSema(ds34pad[pad].sema);
 
-    ret = UsbInterruptTransfer(ds34pad[port].interruptEndp, usb_buf, MAX_BUFFER_SIZE, usb_data_cb, (void *)port);
+    ret = UsbInterruptTransfer(ds34pad[pad].interruptEndp, usb_buf, MAX_BUFFER_SIZE, usb_data_cb, (void *)pad);
 
     if (ret == USB_RC_OK) {
-        TransferWait(ds34pad[port].sema);
+        TransferWait(ds34pad[pad].sema);
         if (!usb_resulCode)
-            readReport(usb_buf, port);
+            readReport(usb_buf, pad);
 
         usb_resulCode = 1;
     } else {
         DPRINTF("DS34USB: ds34usb_get_data usb transfer error %d\n", ret);
     }
 
-    mips_memcpy(dst, ds34pad[port].data, size);
+    mips_memcpy(dst, ds34pad[pad].data, size);
 
-    SignalSema(ds34pad[port].sema);
+    SignalSema(ds34pad[pad].sema);
 }
 
-int ds34usb_get_bdaddr(u8 *data, int port)
+int ds34usb_get_bdaddr(u8 *data, int pad)
 {
     int i, ret;
 
-    if (port >= MAX_PADS)
+    if (pad >= MAX_PADS)
         return 0;
 
-    if (ds34pad[port].update_rum) {
-        ds34pad[port].update_rum = 0;
+    if (ds34pad[pad].update_rum) {
+        ds34pad[pad].update_rum = 0;
         return 0;
     }
 
-    WaitSema(ds34pad[port].sema);
+    WaitSema(ds34pad[pad].sema);
 
-    PollSema(ds34pad[port].cmd_sema);
+    PollSema(ds34pad[pad].cmd_sema);
 
-    if (ds34pad[port].type == DS3) {
-        ret = UsbControlTransfer(ds34pad[port].controlEndp, REQ_USB_IN, USB_REQ_GET_REPORT, (HID_USB_GET_REPORT_FEATURE << 8) | 0xF5, 0, 8, usb_buf, usb_cmd_cb, (void *)port);
+    if (ds34pad[pad].type == DS3) {
+        ret = UsbControlTransfer(ds34pad[pad].controlEndp, REQ_USB_IN, USB_REQ_GET_REPORT, (HID_USB_GET_REPORT_FEATURE << 8) | 0xF5, 0, 8, usb_buf, usb_cmd_cb, (void *)pad);
 
         if (ret == USB_RC_OK) {
-            TransferWait(ds34pad[port].cmd_sema);
+            TransferWait(ds34pad[pad].cmd_sema);
 
             for (i = 0; i < 6; i++)
                 data[5 - i] = usb_buf[2 + i];
@@ -586,10 +586,10 @@ int ds34usb_get_bdaddr(u8 *data, int port)
             ret = 0;
         }
     } else {
-        ret = UsbControlTransfer(ds34pad[port].controlEndp, REQ_USB_IN, USB_REQ_GET_REPORT, (HID_USB_GET_REPORT_FEATURE << 8) | 0x12, 0, 16, usb_buf, usb_cmd_cb, (void *)port);
+        ret = UsbControlTransfer(ds34pad[pad].controlEndp, REQ_USB_IN, USB_REQ_GET_REPORT, (HID_USB_GET_REPORT_FEATURE << 8) | 0x12, 0, 16, usb_buf, usb_cmd_cb, (void *)pad);
 
         if (ret == USB_RC_OK) {
-            TransferWait(ds34pad[port].cmd_sema);
+            TransferWait(ds34pad[pad].cmd_sema);
 
             for (i = 0; i < 6; i++)
                 data[5 - i] = usb_buf[15 - i];
@@ -601,31 +601,31 @@ int ds34usb_get_bdaddr(u8 *data, int port)
         }
     }
 
-    ds34pad[port].update_rum = 1;
-    SignalSema(ds34pad[port].sema);
+    ds34pad[pad].update_rum = 1;
+    SignalSema(ds34pad[pad].sema);
 
     return ret;
 }
 
-void ds34usb_set_bdaddr(u8 *data, int port)
+void ds34usb_set_bdaddr(u8 *data, int pad)
 {
     int i, ret;
 
-    if (port >= MAX_PADS)
+    if (pad >= MAX_PADS)
         return;
 
-    WaitSema(ds34pad[port].sema);
+    WaitSema(ds34pad[pad].sema);
 
-    PollSema(ds34pad[port].cmd_sema);
+    PollSema(ds34pad[pad].cmd_sema);
 
-    if (ds34pad[port].type == DS3) {
+    if (ds34pad[pad].type == DS3) {
         usb_buf[0] = 0x01;
         usb_buf[1] = 0x00;
 
         for (i = 0; i < 6; i++)
             usb_buf[i + 2] = data[5 - i];
 
-        ret = UsbControlTransfer(ds34pad[port].controlEndp, REQ_USB_OUT, USB_REQ_SET_REPORT, (HID_USB_GET_REPORT_FEATURE << 8) | 0xF5, 0, 8, usb_buf, usb_cmd_cb, (void *)port);
+        ret = UsbControlTransfer(ds34pad[pad].controlEndp, REQ_USB_OUT, USB_REQ_SET_REPORT, (HID_USB_GET_REPORT_FEATURE << 8) | 0xF5, 0, 8, usb_buf, usb_cmd_cb, (void *)pad);
     } else {
         usb_buf[0] = 0x13;
 
@@ -635,15 +635,15 @@ void ds34usb_set_bdaddr(u8 *data, int port)
         for (i = 0; i < sizeof(link_key); i++)
             usb_buf[i + 7] = link_key[i];
 
-        ret = UsbControlTransfer(ds34pad[port].controlEndp, REQ_USB_OUT, USB_REQ_SET_REPORT, (HID_USB_GET_REPORT_FEATURE << 8) | 0x13, 0, 24, usb_buf, usb_cmd_cb, (void *)port);
+        ret = UsbControlTransfer(ds34pad[pad].controlEndp, REQ_USB_OUT, USB_REQ_SET_REPORT, (HID_USB_GET_REPORT_FEATURE << 8) | 0x13, 0, 24, usb_buf, usb_cmd_cb, (void *)pad);
     }
 
     if (ret == USB_RC_OK)
-        TransferWait(ds34pad[port].cmd_sema);
+        TransferWait(ds34pad[pad].cmd_sema);
     else
         DPRINTF("DS34USB: ds3usb_set_bdaddr usb transfer error %d\n", ret);
 
-    SignalSema(ds34pad[port].sema);
+    SignalSema(ds34pad[pad].sema);
 }
 
 void ds34usb_reset()
@@ -654,16 +654,16 @@ void ds34usb_reset()
         usb_release(pad);
 }
 
-int ds34usb_get_status(int port)
+int ds34usb_get_status(int pad)
 {
     int ret;
 
-    if (port >= MAX_PADS)
+    if (pad >= MAX_PADS)
         return 0;
 
-    WaitSema(ds34pad[port].sema);
-    ret = ds34pad[port].status;
-    SignalSema(ds34pad[port].sema);
+    WaitSema(ds34pad[pad].sema);
+    ret = ds34pad[pad].status;
+    SignalSema(ds34pad[pad].sema);
 
     return ret;
 }
