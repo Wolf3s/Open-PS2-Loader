@@ -11,8 +11,11 @@
 
 IRX_ID("ds34usb", 1, 1);
 
-#define DPRINTF(x...) printf(x)
-//#define DPRINTF(x...)
+#ifdef DEBUG
+#define DPRINTF(fmt, x...) printf(MODNAME ": " fmt, ##x)
+#else
+#define DPRINTF(x...)
+#endif
 
 #define REQ_USB_OUT (USB_DIR_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE)
 #define REQ_USB_IN  (USB_DIR_IN | USB_TYPE_CLASS | USB_RECIP_INTERFACE)
@@ -159,7 +162,7 @@ static int usb_connect(int devId)
     } while (epCount--);
 
     if (ds34pad[pad].interruptEndp < 0 || ds34pad[pad].outEndp < 0) {
-        SignalSema(ds34pad[pad].sema);		
+        SignalSema(ds34pad[pad].sema);
         usb_release(pad);
         return 1;
     }
@@ -567,7 +570,7 @@ static int ds34usb_get_bdaddr(u8 *data, int pad)
 
             for (i = 0; i < 6; i++)
                 data[5 - i] = usb_buf[2 + i];
-            SignalSema(ds34pad[pad].cmd_sema);			
+            SignalSema(ds34pad[pad].cmd_sema);
 
             ret = 1;
         } else {
