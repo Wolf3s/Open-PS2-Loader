@@ -61,23 +61,23 @@ static u8 link_key[] = // for ds4 authorisation
 
 static u8 usb_buf[MAX_BUFFER_SIZE + 32] __attribute((aligned(4))) = {0};
 
-int usb_probe(int devId);
-int usb_connect(int devId);
-int usb_disconnect(int devId);
+static int usb_probe(int devId);
+static int usb_connect(int devId);
+static int usb_disconnect(int devId);
 
 static void usb_release(int pad);
 static void usb_config_set(int result, int count, void *arg);
 
-UsbDriver usb_driver = {NULL, NULL, "ds34usb", usb_probe, usb_connect, usb_disconnect};
+static UsbDriver usb_driver = {NULL, NULL, "ds34usb", usb_probe, usb_connect, usb_disconnect};
 
 static void DS3USB_init(int pad);
 static void readReport(u8 *data, int pad);
 static int LEDRumble(u8 *led, u8 lrum, u8 rrum, int pad);
 static int Rumble(u8 lrum, u8 rrum, int pad);
 
-ds34usb_device ds34pad[MAX_PADS];
+static ds34usb_device ds34pad[MAX_PADS];
 
-int usb_probe(int devId)
+static int usb_probe(int devId)
 {
     UsbDeviceDescriptor *device = NULL;
 
@@ -95,7 +95,7 @@ int usb_probe(int devId)
     return 0;
 }
 
-int usb_connect(int devId)
+static int usb_connect(int devId)
 {
     int pad, epCount;
     UsbDeviceDescriptor *device;
@@ -166,7 +166,7 @@ int usb_connect(int devId)
     return 0;
 }
 
-int usb_disconnect(int devId)
+static int usb_disconnect(int devId)
 {
     u8 pad;
 
@@ -511,7 +511,7 @@ static int Rumble(u8 lrum, u8 rrum, int pad)
     return LEDRUM(ds34pad[pad].oldled, lrum, rrum, pad);
 }
 
-void ds34usb_set_rumble(u8 lrum, u8 rrum, int pad)
+static void ds34usb_set_rumble(u8 lrum, u8 rrum, int pad)
 {
     if (pad >= MAX_PADS)
         return;
@@ -519,7 +519,7 @@ void ds34usb_set_rumble(u8 lrum, u8 rrum, int pad)
     Rumble(lrum, rrum, pad);
 }
 
-void ds34usb_set_led(u8 *led, int pad)
+static void ds34usb_set_led(u8 *led, int pad)
 {
     if (pad >= MAX_PADS)
         return;
@@ -527,7 +527,7 @@ void ds34usb_set_led(u8 *led, int pad)
     LED(led, pad);
 }
 
-void ds34usb_get_data(char *dst, int size, int pad)
+static void ds34usb_get_data(char *dst, int size, int pad)
 {
     int ret;
 
@@ -555,7 +555,7 @@ void ds34usb_get_data(char *dst, int size, int pad)
     SignalSema(ds34pad[pad].sema);
 }
 
-int ds34usb_get_bdaddr(u8 *data, int pad)
+static int ds34usb_get_bdaddr(u8 *data, int pad)
 {
     int i, ret;
 
@@ -607,7 +607,7 @@ int ds34usb_get_bdaddr(u8 *data, int pad)
     return ret;
 }
 
-void ds34usb_set_bdaddr(u8 *data, int pad)
+static void ds34usb_set_bdaddr(u8 *data, int pad)
 {
     int i, ret;
 
@@ -646,7 +646,7 @@ void ds34usb_set_bdaddr(u8 *data, int pad)
     SignalSema(ds34pad[pad].sema);
 }
 
-void ds34usb_reset()
+static void ds34usb_reset()
 {
     int pad;
 
@@ -654,7 +654,7 @@ void ds34usb_reset()
         usb_release(pad);
 }
 
-int ds34usb_get_status(int pad)
+static int ds34usb_get_status(int pad)
 {
     int ret;
 
@@ -668,7 +668,7 @@ int ds34usb_get_status(int pad)
     return ret;
 }
 
-void ds34usb_init(u8 pads)
+static void ds34usb_init(u8 pads)
 {
     u8 pad;
 
@@ -698,7 +698,7 @@ static int rpc_buf[64] __attribute((aligned(16)));
 
 #define DS34USB_BIND_RPC_ID 0x18E3878E
 
-void rpc_thread(void *data)
+static void rpc_thread(void *data)
 {
     SifInitRpc(0);
     SifSetRpcQueue(&rpc_que, GetThreadId());
@@ -706,7 +706,7 @@ void rpc_thread(void *data)
     SifRpcLoop(&rpc_que);
 }
 
-void *rpc_sf(int cmd, void *data, int size)
+static void *rpc_sf(int cmd, void *data, int size)
 {
     switch (cmd) {
         case DS34USB_INIT:
