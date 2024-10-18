@@ -102,8 +102,6 @@ extern GSGLOBAL *gsGlobal; // Handler for the textures
 
 static int texPngLoad(GSTEXTURE *texture, const char *path);
 static int texPngLoadInternal(GSTEXTURE *texture, int texId);
-static int texJpgLoad(GSTEXTURE *texture, const char *path);
-static int texBmpLoad(GSTEXTURE *texture, const char *path);
 
 // Not related to screen size, just to limit at some point
 static int maxSize = 720 * 512 * 4;
@@ -270,8 +268,6 @@ struct STexLoader
 };
 static struct STexLoader texLoader[] = {
     {"png", texPngLoad},
-    {"jpg", texJpgLoad},
-    {"bmp", texBmpLoad},
     {NULL, NULL}};
 
 int texDiscoverLoad(GSTEXTURE *texture, const char *path, int texId)
@@ -618,46 +614,4 @@ static int texPngLoad(GSTEXTURE *texture, const char *filePath)
 static int texPngLoadInternal(GSTEXTURE *texture, int texId)
 {
     return texPngLoadAll(texture, NULL, texId);
-}
-
-/// JPG SUPPORT ///////////////////////////////////////////////////////////////////////////////////////
-
-
-static int texJpgLoad(GSTEXTURE *texture, const char *filePath)
-{
-    texPrepare(texture);
-    int result;
-    if (gsKit_texture_jpeg(gsGlobal, texture, (char *)filePath) < 0) {
-        result = ERR_BAD_FILE;
-        return result;
-    }
-    texture->Filter = GS_FILTER_LINEAR;
-
-    if (texSizeValidate(texture->Width, texture->Height, texture->PSM) < 0) {
-        texFree(texture);
-        result = ERR_BAD_DIMENSION;
-        return result;
-    }
-
-    return result;
-}
-
-
-/// BMP SUPPORT ///////////////////////////////////////////////////////////////////////////////////////
-
-static int texBmpLoad(GSTEXTURE *texture, const char *filePath)
-{
-    texPrepare(texture);
-
-    if (gsKit_texture_bmp(gsGlobal, texture, (char *)filePath) < 0)
-        return ERR_BAD_FILE;
-
-    texture->Filter = GS_FILTER_LINEAR;
-
-    if (texSizeValidate(texture->Width, texture->Height, texture->PSM) < 0) {
-        texFree(texture);
-        return ERR_BAD_DIMENSION;
-    }
-
-    return 0;
 }
