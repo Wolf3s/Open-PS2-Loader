@@ -27,12 +27,6 @@ EXTRAVERSION = Beta
 #Enables/disables Right-To-Left (RTL) language support
 RTL ?= 0
 
-#Enables/disables In Game Screenshot (IGS). NB: It depends on GSM and IGR to work
-IGS ?= 1
-
-#Enables/disables pad emulator
-PADEMU ?= 1
-
 #Enables/disables building of an edition of OPL that will support the DTL-T10000 (SDK v2.3+)
 DTL_T10000 ?= 0
 
@@ -80,7 +74,7 @@ IOP_OBJS =	iomanx.o filexio.o ps2fs.o usbd.o bdmevent.o \
 		httpclient-iop.o netman.o ps2ips.o \
 		bdm_mcemu.o hdd_mcemu.o smb_mcemu.o \
 		iremsndpatch.o apemodpatch.o f2techioppatch.o cleareffects.o resetspu.o \
-		libsd.o audsrv.o
+		libsd.o audsrv.o bt_pademu.o usb_pademu.o ds34usb.o ds34bt.o libds34usb.a libds34bt.a
 
 EECORE_OBJS = ee_core.o ioprp.o util.o \
 		udnl.o imgdrv.o eesync.o \
@@ -124,7 +118,7 @@ MAPFILE = opl.map
 EE_LDFLAGS += -Wl,-Map,$(MAPFILE)
 
 EE_LIBS = -L$(PS2SDK)/ports/lib -L$(GSKIT)/lib -L./lib -lgskit -ldmakit -lgskit_toolkit -lpoweroff -lfileXio -lpatches -ljpeg_ps2_addons -ljpeg -lpng -lz -lmc -lfreetype -lvux -lcdvd -lnetman -lps2ips -laudsrv -lvorbisfile -lvorbis -logg -lpadx -lelf-loader-nocolour
-EE_INCS += -I$(PS2SDK)/ports/include -I$(PS2SDK)/ports/include/freetype2 -I$(GSKIT)/include -I$(GSKIT)/ee/dma/include -I$(GSKIT)/ee/gs/include -I$(GSKIT)/ee/toolkit/include -Imodules/iopcore/common -Imodules/network/common -Imodules/hdd/common -Iinclude
+EE_INCS += -I$(PS2SDK)/ports/include -I$(PS2SDK)/ports/include/freetype2 -I$(GSKIT)/include -I$(GSKIT)/ee/dma/include -I$(GSKIT)/ee/gs/include -I$(GSKIT)/ee/toolkit/include -Imodules/iopcore/common -Imodules/network/common -Imodules/hdd/common -Imodules/ds34bt/ee -Imodules/ds34usb/ee -Iinclude
 
 BIN2C = $(PS2SDK)/bin/bin2c
 
@@ -141,22 +135,6 @@ ifeq ($(DTL_T10000),1)
   UDNL_OUT = $(PS2SDK)/iop/irx/udnl-t300.irx
 else
   UDNL_OUT = $(PS2SDK)/iop/irx/udnl.irx
-endif
-
-ifeq ($(IGS),1)
-  EE_CFLAGS += -DIGS
-  IGS_FLAGS = IGS=1
-else
-  IGS_FLAGS = IGS=0
-endif
-
-ifeq ($(PADEMU),1)
-  IOP_OBJS += bt_pademu.o usb_pademu.o ds34usb.o ds34bt.o libds34usb.a libds34bt.a
-  EE_CFLAGS += -DPADEMU
-  EE_INCS += -Imodules/ds34bt/ee -Imodules/ds34usb/ee
-  PADEMU_FLAGS = PADEMU=1
-else
-  PADEMU_FLAGS = PADEMU=0
 endif
 
 ifeq ($(DEBUG),1)
@@ -209,7 +187,7 @@ else
   SMSTCPIP_INGAME_CFLAGS = INGAME_DRIVER=1
 endif
 
-EE_CFLAGS += -fsingle-precision-constant -DOPL_VERSION=\"$(OPL_VERSION)\"
+EE_CFLAGS += -DIGS -DPADEMU -fsingle-precision-constant -DOPL_VERSION=\"$(OPL_VERSION)\"
 
 # There are a few places where the config key/value are truncated, so disable these warnings
 EE_CFLAGS += -Wno-format-truncation -Wno-stringop-truncation
@@ -385,7 +363,7 @@ $(EE_VPKD).ZIP: $(EE_VPKD).ELF DETAILED_CHANGELOG CREDITS LICENSE README.md
 
 ee_core/ee_core.elf: ee_core
 	echo "-EE core"
-	$(MAKE) $(IGS_FLAGS) $(PADEMU_FLAGS) $(EECORE_EXTRA_FLAGS) -C $<
+	$(MAKE) $(EECORE_EXTRA_FLAGS) -C $<
 
 $(EE_ASM_DIR)ee_core.c: ee_core/ee_core.elf | $(EE_ASM_DIR)
 	$(BIN2C) $< $@ eecore_elf
@@ -463,19 +441,19 @@ $(EE_ASM_DIR)resetspu.c: modules/iopcore/resetspu/resetspu.irx | $(EE_ASM_DIR)
 	$(BIN2C) $< $@ $(*F)_irx
 
 modules/mcemu/bdm_mcemu.irx: modules/mcemu
-	$(MAKE) $(MCEMU_DEBUG_FLAGS) $(PADEMU_FLAGS) USE_BDM=1 -C $< all
+	$(MAKE) $(MCEMU_DEBUG_FLAGS) USE_BDM=1 -C $< all
 
 $(EE_ASM_DIR)bdm_mcemu.c: modules/mcemu/bdm_mcemu.irx
 	$(BIN2C) $< $@ $(*F)_irx
 
 modules/mcemu/hdd_mcemu.irx: modules/mcemu
-	$(MAKE) $(MCEMU_DEBUG_FLAGS) $(PADEMU_FLAGS) USE_HDD=1 -C $< all
+	$(MAKE) $(MCEMU_DEBUG_FLAGS) USE_HDD=1 -C $< all
 
 $(EE_ASM_DIR)hdd_mcemu.c: modules/mcemu/hdd_mcemu.irx
 	$(BIN2C) $< $@ $(*F)_irx
 
 modules/mcemu/smb_mcemu.irx: modules/mcemu
-	$(MAKE) $(MCEMU_DEBUG_FLAGS) $(PADEMU_FLAGS) USE_SMB=1 -C $< all
+	$(MAKE) $(MCEMU_DEBUG_FLAGS) USE_SMB=1 -C $< all
 
 $(EE_ASM_DIR)smb_mcemu.c: modules/mcemu/smb_mcemu.irx
 	$(BIN2C) $< $@ $(*F)_irx

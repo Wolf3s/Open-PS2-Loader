@@ -209,20 +209,12 @@ void guiShowAbout()
 #ifdef __RTL
                                                        " - RTL"
 #endif
-#ifdef IGS
                                                        " - IGS %s"
-#endif
-#ifdef PADEMU
                                                        " - PADEMU"
-#endif
              // Version numbers
              ,
-             GSM_VERSION
-#ifdef IGS
-             ,
-             IGS_VERSION
-#endif
-    );
+             GSM_VERSION,
+             IGS_VERSION);
     diaSetLabel(diaAbout, ABOUT_BUILD_DETAILS, OPLBuildDetails);
 
     diaExecuteDialog(diaAbout, -1, 1, NULL);
@@ -935,13 +927,11 @@ void guiShowControllerConfig(void)
             gSelectButton = value == 0 ? KEY_CIRCLE : KEY_CROSS;
         else
             gSelectButton = KEY_CIRCLE;
-#ifdef PADEMU
         if (result == PADEMU_GLOBAL_BUTTON) {
             guiGameShowPadEmuConfig(1);
         } else if (result == PADMACRO_GLOBAL_BUTTON) {
             guiGameShowPadMacroConfig(1);
         }
-#endif
         applyConfig(-1, -1, 1);
     }
 }

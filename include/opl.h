@@ -162,18 +162,14 @@ extern int gOSDLanguageSource;
 
 extern int showCfgPopup;
 
-#ifdef IGS
 #define IGS_VERSION "0.1"
-#endif
 
 // ------------------------------------------------------------------------------------------------------------------------
 
-#ifdef PADEMU
 extern int gEnablePadEmu;
 extern int gPadEmuSettings;
 extern int gPadMacroSource;
 extern int gPadMacroSettings;
-#endif
 
 // ------------------------------------------------------------------------------------------------------------------------
 
