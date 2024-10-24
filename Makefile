@@ -125,7 +125,7 @@ BIN2C = $(PS2SDK)/bin/bin2c
 # but a tab is not allowed; if the line begins with a tab, it will be considered part of a recipe for a rule!
 
 ifeq ($(EXTRA_FEATURES),1)
-EE_CFLAGS += -DEXTRA_FEATURES -D__RTL
+EE_CFLAGS += -DEXTRA_FEATURES
 EXTRA_FEATURES_FLAGS = EXTRA_FEATURES=1
 IOP_OBJS += bt_pademu.o usb_pademu.o ds34usb.o ds34bt.o libds34usb.a libds34bt.a
 EE_INCS += -Imodules/ds34bt/ee -Imodules/ds34usb/ee
