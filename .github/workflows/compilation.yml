@@ -22,7 +22,7 @@ jobs:
     - name: git clone libsmb2 and build
       uses: actions/checkout@v4
     - run: |
-        git -C remote add origin https://github.com/sahlberg/libsmb2/commit/39a63193f76b27206de50ee9b0f90f8a993deb00
+        git -C add origin https://github.com/sahlberg/libsmb2/commit/39a63193f76b27206de50ee9b0f90f8a993deb00
         cd libsmb2
         make -f Makefile.platform ps2_ee_install clean
         make -f Makefile.platform ps2_iop_install clean
@@ -74,7 +74,7 @@ jobs:
     - name: git clone libsmb2 and build
       uses: actions/checkout@v4
     - run: |
-        git -C remote add origin https://github.com/sahlberg/libsmb2/commit/39a63193f76b27206de50ee9b0f90f8a993deb00
+        git -C add origin https://github.com/sahlberg/libsmb2/commit/39a63193f76b27206de50ee9b0f90f8a993deb00
         cd libsmb2
         make -f Makefile.platform ps2_ee_install clean
         make -f Makefile.platform ps2_iop_install clean
