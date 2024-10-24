@@ -187,9 +187,13 @@ unsigned char gDefaultSelTextColor[3];
 unsigned char gDefaultUITextColor[3];
 hdl_game_info_t *gAutoLaunchGame;
 base_game_info_t *gAutoLaunchBDMGame;
+bdm_device_data_t *gAutoLaunchDeviceData;
 char gOPLPart[128];
 char *gHDDPrefix;
 char gExportName[32];
+
+int gXSensitivity;
+int gYSensitivity;
 
 int gOSDLanguageValue;
 int gOSDTVAspectRatio;
@@ -427,13 +431,8 @@ static void initAllSupport(int force_reinit)
 static void deinitAllSupport(int exception, int modeSelected)
 {
     for (int i = 0; i < MODE_COUNT; i++) {
-        if (list_support[i].support != NULL) {
-            // If the selected mode is one of the mass devices then skip deinit for all mass device objects.
-            if (modeSelected >= BDM_MODE && modeSelected <= BDM_MODE4 && i <= BDM_MODE4)
-                continue;
-
+        if (list_support[i].support != NULL)
             moduleCleanup(&list_support[i], exception, modeSelected);
-        }
     }
 }
 
@@ -890,7 +889,15 @@ static void _loadConfig()
             configGetInt(configOPL, CONFIG_OPL_ENABLE_NOTIFICATIONS, &gEnableNotifications);
             configGetInt(configOPL, CONFIG_OPL_ENABLE_COVERART, &gEnableArt);
             configGetInt(configOPL, CONFIG_OPL_WIDESCREEN, &gWideScreen);
-            configGetInt(configOPL, CONFIG_OPL_VMODE, &gVMode);
+
+            if (!(getKeyPressed(KEY_TRIANGLE) && getKeyPressed(KEY_CROSS))) {
+                configGetInt(configOPL, CONFIG_OPL_VMODE, &gVMode);
+            } else {
+                LOG("--- Select held at boot - setting Video Mode to Auto ---\n");
+                gVMode = 0;
+                configSetInt(configOPL, CONFIG_OPL_VMODE, gVMode);
+            }
+
             configGetInt(configOPL, CONFIG_OPL_XOFF, &gXOff);
             configGetInt(configOPL, CONFIG_OPL_YOFF, &gYOff);
             configGetInt(configOPL, CONFIG_OPL_OVERSCAN, &gOverscan);
@@ -908,6 +915,8 @@ static void _loadConfig()
             if (configGetInt(configOPL, CONFIG_OPL_SWAP_SEL_BUTTON, &value))
                 gSelectButton = value == 0 ? KEY_CIRCLE : KEY_CROSS;
 
+            configGetInt(configOPL, CONFIG_OPL_XSENSITIVITY, &gXSensitivity);
+            configGetInt(configOPL, CONFIG_OPL_YSENSITIVITY, &gYSensitivity);
             configGetInt(configOPL, CONFIG_OPL_DISABLE_DEBUG, &gEnableDebug);
             configGetInt(configOPL, CONFIG_OPL_PS2LOGO, &gPS2Logo);
             configGetInt(configOPL, CONFIG_OPL_HDD_GAME_LIST_CACHE, &gHDDGameListCache);
@@ -1093,6 +1102,8 @@ static void _saveConfig()
         configSetInt(configOPL, CONFIG_OPL_BOOT_SND_VOLUME, gBootSndVolume);
         configSetInt(configOPL, CONFIG_OPL_BGM_VOLUME, gBGMVolume);
         configSetStr(configOPL, CONFIG_OPL_DEFAULT_BGM_PATH, gDefaultBGMPath);
+        configSetInt(configOPL, CONFIG_OPL_XSENSITIVITY, gXSensitivity);
+        configSetInt(configOPL, CONFIG_OPL_YSENSITIVITY, gYSensitivity);
 
         configSetInt(configOPL, CONFIG_OPL_SWAP_SEL_BUTTON, gSelectButton == KEY_CIRCLE ? 0 : 1);
     }
@@ -1640,13 +1651,12 @@ void setDefaultColors(void)
 
 static void setDefaults(void)
 {
-    clearIOModuleT(&list_support[BDM_MODE]);
-    clearIOModuleT(&list_support[ETH_MODE]);
-    clearIOModuleT(&list_support[HDD_MODE]);
-    clearIOModuleT(&list_support[APP_MODE]);
+    for (int i = 0; i < MODE_COUNT; i++)
+        clearIOModuleT(&list_support[i]);
 
     gAutoLaunchGame = NULL;
     gAutoLaunchBDMGame = NULL;
+    gAutoLaunchDeviceData = NULL;
     gOPLPart[0] = '\0';
     gHDDPrefix = "pfs0:";
     gBaseMCDir = "mc?:OPL";
@@ -1709,6 +1719,8 @@ static void setDefaults(void)
     gBootSndVolume = 80;
     gBGMVolume = 70;
     gDefaultBGMPath[0] = '\0';
+    gXSensitivity = 1;
+    gYSensitivity = 1;
 
     gBDMStartMode = START_MODE_DISABLED;
     gHDDStartMode = START_MODE_DISABLED;
@@ -1922,10 +1934,25 @@ static void autoLaunchBDMGame(char *argv[])
     gAutoLaunchBDMGame->format = format;
     gAutoLaunchBDMGame->parts = 1; // ul not supported.
 
-    if (gBDMPrefix[0] != '\0')
+    gAutoLaunchDeviceData = malloc(sizeof(bdm_device_data_t));
+    memset(gAutoLaunchDeviceData, 0, sizeof(bdm_device_data_t));
+
+    snprintf(path, sizeof(path), "mass0:");
+    int dir = fileXioDopen(path);
+    if (dir >= 0) {
+        fileXioIoctl2(dir, USBMASS_IOCTL_GET_DRIVERNAME, NULL, 0, &gAutoLaunchDeviceData->bdmDriver, sizeof(gAutoLaunchDeviceData->bdmDriver) - 1);
+        fileXioIoctl2(dir, USBMASS_IOCTL_GET_DEVICE_NUMBER, NULL, 0, &gAutoLaunchDeviceData->massDeviceIndex, sizeof(gAutoLaunchDeviceData->massDeviceIndex));
+
+        fileXioDclose(dir);
+    }
+
+    if (gBDMPrefix[0] != '\0') {
         snprintf(path, sizeof(path), "mass0:%s/CFG/%s.cfg", gBDMPrefix, gAutoLaunchBDMGame->startup);
-    else
+        snprintf(gAutoLaunchDeviceData->bdmPrefix, sizeof(gAutoLaunchDeviceData->bdmPrefix), "mass0:%s/", gBDMPrefix);
+    } else {
         snprintf(path, sizeof(path), "mass0:CFG/%s.cfg", gAutoLaunchBDMGame->startup);
+        snprintf(gAutoLaunchDeviceData->bdmPrefix, sizeof(gAutoLaunchDeviceData->bdmPrefix), "mass0:");
+    }
 
     configSet = configAlloc(0, NULL, path);
     configRead(configSet);
