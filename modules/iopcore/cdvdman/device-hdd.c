@@ -8,6 +8,8 @@
 
 #include "device.h"
 
+#include "../../isofs/zso.h"
+
 extern struct cdvdman_settings_hdd cdvdman_settings;
 
 extern struct irx_export_table _exp_atad;
@@ -58,14 +60,14 @@ void DeviceInit(void)
     DPRINTF("DeviceInit: apa header LBA = %lu\n", cdvdman_settings.lba_start);
 
 #ifdef HD_PRO
-    //For HDPro, as its custom ATAD module does not export ata_io_start() and ata_io_finish(). And it also resets the ATA bus.
+    // For HDPro, as its custom ATAD module does not export sceAtaExecCmd() and sceAtaWaitResult(). And it also resets the ATA bus.
     if (cdvdman_settings.common.flags & IOPCORE_ENABLE_POFF) {
-        //If IGR is enabled (the poweroff function here is disabled), we can tell when to flush the cache. Hence if IGR is disabled, then we should disable the write cache.
+        // If IGR is enabled (the poweroff function here is disabled), we can tell when to flush the cache. Hence if IGR is disabled, then we should disable the write cache.
         ata_device_set_write_cache(0, 0);
     }
 #endif
 
-    while ((r = ata_device_sector_io(0, &apaHeader, cdvdman_settings.lba_start, 2, ATA_DIR_READ)) != 0) {
+    while ((r = sceAtaDmaTransfer(0, &apaHeader, cdvdman_settings.lba_start, 2, ATA_DIR_READ)) != 0) {
         DPRINTF("DeviceInit: failed to read apa header %d\n", r);
         DelayThread(2000);
     }
@@ -73,7 +75,8 @@ void DeviceInit(void)
     memcpy(cdvdman_partspecs, apaHeader.part_specs, sizeof(cdvdman_partspecs));
 
     cdvdman_settings.common.media = apaHeader.discType;
-    cdvdman_settings.common.layer1_start = apaHeader.layer1_start;
+    if (cdvdman_settings.common.layer1_start == 0) // layer1 start not set, read it from APA header
+        cdvdman_settings.common.layer1_start = apaHeader.layer1_start;
     NumParts = apaHeader.num_partitions;
 }
 
@@ -97,12 +100,12 @@ void DeviceLock(void)
 
 void DeviceUnmount(void)
 {
-    ata_device_flush_cache(0);
+    sceAtaFlushCache(0);
 }
 
 void DeviceStop(void)
 {
-    //This will be handled by ATAD.
+    // This will be handled by ATAD.
 }
 
 int DeviceReadSectors(u32 lsn, void *buffer, unsigned int sectors)
@@ -118,7 +121,7 @@ int DeviceReadSectors(u32 lsn, void *buffer, unsigned int sectors)
             nsectors = sectors;
 
         u32 lba = cdvdman_partspecs[CurrentPart].data_start + ((lsn - cdvdman_partspecs[CurrentPart].part_offset) << 2);
-        if (ata_device_sector_io(0, (void *)(buffer + offset), lba, nsectors << 2, ATA_DIR_READ) != 0) {
+        if (sceAtaDmaTransfer(0, (void *)((u8 *)buffer + offset), lba, nsectors << 2, ATA_DIR_READ) != 0) {
             return SCECdErREAD;
         }
         offset += nsectors * 2048;

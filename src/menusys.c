@@ -24,6 +24,7 @@ enum MENU_IDs {
     MENU_GFX_SETTINGS,
     MENU_AUDIO_SETTINGS,
     MENU_CONTROLLER_SETTINGS,
+    MENU_OSD_LANGUAGE_SETTINGS,
     MENU_PARENTAL_LOCK,
     MENU_NET_CONFIG,
     MENU_NET_UPDATE,
@@ -40,6 +41,9 @@ enum GAME_MENU_IDs {
     GAME_GSM_SETTINGS,
     GAME_VMC_SETTINGS,
     GAME_PADEMU_SETTINGS,
+    GAME_PADMACRO_SETTINGS,
+#endif
+    GAME_OSD_LANGUAGE_SETTINGS,
     GAME_SAVE_CHANGES,
     GAME_TEST_CHANGES,
     GAME_REMOVE_CHANGES,
@@ -71,6 +75,7 @@ static submenu_list_t *appMenu;
 static submenu_list_t *appMenuCurrent;
 
 static s32 menuSemaId;
+static s32 menuListSemaId = -1;
 static ee_sema_t menuSema;
 
 static void menuRenameGame(submenu_list_t **submenu)
@@ -88,14 +93,19 @@ static void menuRenameGame(submenu_list_t **submenu)
         if (support->itemRename) {
             if (menuCheckParentalLock() == 0) {
                 sfxPlay(SFX_MESSAGE);
-                int nameLength = support->itemGetNameLength(selected_item->item->current->item.id);
+                int nameLength = support->itemGetNameLength(support, selected_item->item->current->item.id);
                 char newName[nameLength];
                 strncpy(newName, selected_item->item->current->item.text, nameLength);
                 if (guiShowKeyboard(newName, nameLength)) {
                     guiSwitchScreen(GUI_SCREEN_MAIN);
                     submenuDestroy(submenu);
-                    support->itemRename(selected_item->item->current->item.id, newName);
-                    ioPutRequest(IO_MENU_UPDATE_DEFFERED, &support->mode);
+
+                    // Only rename the file if the name changed; trying to rename a file with a file name that hasn't changed can cause the file
+                    // to be deleted on certain file systems.
+                    if (strcmp(newName, selected_item->item->current->item.text) != 0) {
+                        support->itemRename(support, selected_item->item->current->item.id, newName);
+                        ioPutRequest(IO_MENU_UPDATE_DEFFERED, &support->mode);
+                    }
                 }
             }
         }
@@ -119,7 +129,7 @@ static void menuDeleteGame(submenu_list_t **submenu)
                 if (guiMsgBox(_l(_STR_DELETE_WARNING), 1, NULL)) {
                     guiSwitchScreen(GUI_SCREEN_MAIN);
                     submenuDestroy(submenu);
-                    support->itemDelete(selected_item->item->current->item.id);
+                    support->itemDelete(support, selected_item->item->current->item.id);
                     ioPutRequest(IO_MENU_UPDATE_DEFFERED, &support->mode);
                 }
             }
@@ -133,7 +143,7 @@ static void _menuLoadConfig()
     WaitSema(menuSemaId);
     if (!itemConfig) {
         item_list_t *list = selected_item->item->userdata;
-        itemConfig = list->itemGetConfig(itemConfigId);
+        itemConfig = list->itemGetConfig(list, itemConfigId);
     }
     actionStatus = 0;
     SignalSema(menuSemaId);
@@ -205,11 +215,11 @@ static void menuInitMainMenu(void)
     submenuAppendItem(&mainMenu, -1, NULL, MENU_GFX_SETTINGS, _STR_GFX_SETTINGS);
     submenuAppendItem(&mainMenu, -1, NULL, MENU_AUDIO_SETTINGS, _STR_AUDIO_SETTINGS);
     submenuAppendItem(&mainMenu, -1, NULL, MENU_CONTROLLER_SETTINGS, _STR_CONTROLLER_SETTINGS);
+    submenuAppendItem(&mainMenu, -1, NULL, MENU_OSD_LANGUAGE_SETTINGS, _STR_OSD_SETTINGS);
     submenuAppendItem(&mainMenu, -1, NULL, MENU_PARENTAL_LOCK, _STR_PARENLOCKCONFIG);
     submenuAppendItem(&mainMenu, -1, NULL, MENU_NET_CONFIG, _STR_NETCONFIG);
     submenuAppendItem(&mainMenu, -1, NULL, MENU_NET_UPDATE, _STR_NET_UPDATE);
-    if (gHDDStartMode && gEnableWrite) // enabled at all?
-        submenuAppendItem(&mainMenu, -1, NULL, MENU_START_NBD, _STR_STARTNBD);
+    submenuAppendItem(&mainMenu, -1, NULL, MENU_START_NBD, _STR_STARTNBD);
     submenuAppendItem(&mainMenu, -1, NULL, MENU_ABOUT, _STR_ABOUT);
     submenuAppendItem(&mainMenu, -1, NULL, MENU_SAVE_CHANGES, _STR_SAVE_CHANGES);
     submenuAppendItem(&mainMenu, -1, NULL, MENU_EXIT, _STR_EXIT);
@@ -234,6 +244,9 @@ void menuInitGameMenu(void)
     submenuAppendItem(&gameMenu, -1, NULL, GAME_GSM_SETTINGS, _STR_GSCONFIG);
     submenuAppendItem(&gameMenu, -1, NULL, GAME_VMC_SETTINGS, _STR_VMC_SCREEN);
     submenuAppendItem(&gameMenu, -1, NULL, GAME_PADEMU_SETTINGS, _STR_PADEMUCONFIG);
+    submenuAppendItem(&gameMenu, -1, NULL, GAME_PADMACRO_SETTINGS, _STR_PADMACROCONFIG);
+#endif
+    submenuAppendItem(&gameMenu, -1, NULL, GAME_OSD_LANGUAGE_SETTINGS, _STR_OSD_SETTINGS);
     submenuAppendItem(&gameMenu, -1, NULL, GAME_SAVE_CHANGES, _STR_SAVE_CHANGES);
     submenuAppendItem(&gameMenu, -1, NULL, GAME_TEST_CHANGES, _STR_TEST);
     submenuAppendItem(&gameMenu, -1, NULL, GAME_REMOVE_CHANGES, _STR_REMOVE_ALL_SETTINGS);
@@ -278,6 +291,9 @@ void menuInit()
     menuSema.max_count = 1;
     menuSema.option = 0;
     menuSemaId = CreateSema(&menuSema);
+    if (menuListSemaId < 0) {
+        menuListSemaId = sbCreateSemaphore();
+    }
 }
 
 void menuEnd()
@@ -289,8 +305,8 @@ void menuEnd()
         menu_list_t *td = cur;
         cur = cur->next;
 
-        if (&td->item)
-            submenuDestroy(&td->item->submenu);
+        if (td->item)
+            submenuDestroy(&(td->item->submenu));
 
         menuRemoveHints(td->item);
 
@@ -307,6 +323,8 @@ void menuEnd()
     }
 
     DeleteSema(menuSemaId);
+    DeleteSema(menuListSemaId);
+    menuListSemaId = -1;
 }
 
 static menu_list_t *AllocMenuItem(menu_item_t *item)
@@ -326,24 +344,44 @@ void menuAppendItem(menu_item_t *item)
 {
     assert(item);
 
+    WaitSema(menuListSemaId);
+
     if (menu == NULL) {
         menu = AllocMenuItem(item);
         selected_item = menu;
-        return;
+    } else {
+        menu_list_t *cur = menu;
+
+        // traverse till the end
+        while (cur->next)
+            cur = cur->next;
+
+        // create new item
+        menu_list_t *newitem = AllocMenuItem(item);
+
+        // link
+        cur->next = newitem;
+        newitem->prev = cur;
     }
 
-    menu_list_t *cur = menu;
+    SignalSema(menuListSemaId);
+}
 
-    // traverse till the end
-    while (cur->next)
+static void refreshMenuPosition(void)
+{
+    // Find the first menu in the list that is visible and set it as the active menu.
+    if (menu == NULL)
+        return;
+
+    menu_list_t *cur = menu;
+    while (cur->item->visible == 0 && cur->next)
         cur = cur->next;
 
-    // create new item
-    menu_list_t *newitem = AllocMenuItem(item);
-
-    // link
-    cur->next = newitem;
-    newitem->prev = cur;
+    if (cur->item->visible == 0) {
+        // No visible menu was found, just set the current menu to the first one in the list.
+        selected_item = menu;
+    } else
+        selected_item = cur;
 }
 
 void submenuRebuildCache(submenu_list_t *submenu)
@@ -522,11 +560,13 @@ void submenuSort(submenu_list_t **submenu)
 {
     // a simple bubblesort
     // *submenu = mergeSort(*submenu);
-    submenu_list_t *head = *submenu;
+    submenu_list_t *head;
     int sorted = 0;
 
     if ((submenu == NULL) || (*submenu == NULL) || ((*submenu)->next == NULL))
         return;
+
+    head = *submenu;
 
     while (!sorted) {
         sorted = 1;
@@ -559,8 +599,13 @@ void submenuSort(submenu_list_t **submenu)
 
 static void menuNextH()
 {
-    if (selected_item->next != NULL) {
-        selected_item = selected_item->next;
+    struct menu_list *next = selected_item->next;
+    while (next != NULL && next->item->visible == 0)
+        next = next->next;
+
+    // If we found a valid menu transition to it.
+    if (next != NULL) {
+        selected_item = next;
         itemConfigId = -1;
         sfxPlay(SFX_CURSOR);
     }
@@ -568,8 +613,12 @@ static void menuNextH()
 
 static void menuPrevH()
 {
-    if (selected_item->prev != NULL) {
-        selected_item = selected_item->prev;
+    struct menu_list *prev = selected_item->prev;
+    while (prev != NULL && prev->item->visible == 0)
+        prev = prev->prev;
+
+    if (prev != NULL) {
+        selected_item = prev;
         itemConfigId = -1;
         sfxPlay(SFX_CURSOR);
     }
@@ -728,13 +777,8 @@ void menuRenderMenu()
         // render, advance
         fntRenderString(gTheme->fonts[0], 320, y, ALIGN_CENTER, 0, 0, submenuItemGetText(&it->item), (cp == sitem) ? gTheme->selTextColor : gTheme->textColor);
         y += spacing;
-        if (gHDDStartMode && gEnableWrite) {
-            if (cp == 7)
-                y += spacing / 2;
-        } else {
-            if (cp == 6)
-                y += spacing / 2;
-        }
+        if (cp == (MENU_ABOUT - 1))
+            y += spacing / 2;
     }
 
     // hints
@@ -831,6 +875,9 @@ void menuHandleInputMenu()
         } else if (id == MENU_CONTROLLER_SETTINGS) {
             if (menuCheckParentalLock() == 0)
                 guiShowControllerConfig();
+        } else if (id == MENU_OSD_LANGUAGE_SETTINGS) {
+            if (menuCheckParentalLock() == 0)
+                guiGameShowOSDLanguageConfig(1);
         } else if (id == MENU_PARENTAL_LOCK) {
             if (menuCheckParentalLock() == 0)
                 guiShowParentalLockConfig();
@@ -847,9 +894,12 @@ void menuHandleInputMenu()
             guiShowAbout();
         } else if (id == MENU_SAVE_CHANGES) {
             if (menuCheckParentalLock() == 0) {
+                guiGameSaveOSDLanguageGlobalConfig(configGetByType(CONFIG_GAME));
+#ifdef PADEMU
                 guiGameSavePadEmuGlobalConfig(configGetByType(CONFIG_GAME));
+                guiGameSavePadMacroGlobalConfig(configGetByType(CONFIG_GAME));
+#endif
                 saveConfig(CONFIG_OPL | CONFIG_NETWORK | CONFIG_GAME, 1);
-
                 menuSetParentalLockCheckState(1); // Re-enable parental lock check.
             }
         } else if (id == MENU_EXIT) {
@@ -866,18 +916,20 @@ void menuHandleInputMenu()
 
     if (getKeyOn(KEY_START) || getKeyOn(gSelectButton == KEY_CIRCLE ? KEY_CROSS : KEY_CIRCLE)) {
         // Check if there is anything to show the user, at all.
-        if (gAPPStartMode || gETHStartMode || gBDMStartMode || gHDDStartMode)
+        if (gAPPStartMode || gETHStartMode || gBDMStartMode || gHDDStartMode) {
             guiSwitchScreen(GUI_SCREEN_MAIN);
+            refreshMenuPosition();
+        }
     }
 }
 
-void menuRenderMain()
+static void menuRenderElements(theme_element_t *elem)
 {
     // selected_item can't be NULL here as we only allow to switch to "Main" rendering when there is at least one device activated
     _menuRequestConfig();
 
     WaitSema(menuSemaId);
-    theme_element_t *elem = gTheme->mainElems.first;
+
     while (elem) {
         if (elem->drawElem)
             elem->drawElem(selected_item, selected_item->item->current, itemConfig, elem);
@@ -885,6 +937,19 @@ void menuRenderMain()
         elem = elem->next;
     }
     SignalSema(menuSemaId);
+}
+
+void menuRenderMain(void)
+{
+    item_list_t *list = selected_item->item->userdata;
+
+    if (list->mode == APP_MODE) {
+        menuRenderElements(gTheme->appsMainElems.first);
+        gTheme->itemsList = gTheme->appsItemsList;
+    } else {
+        menuRenderElements(gTheme->mainElems.first);
+        gTheme->itemsList = gTheme->gamesItemsList;
+    }
 }
 
 void menuHandleInputMain()
@@ -931,20 +996,17 @@ void menuHandleInputMain()
     }
 }
 
-void menuRenderInfo()
+void menuRenderInfo(void)
 {
-    // selected_item->item->current can't be NULL here as we only allow to switch to "Info" rendering when there is at least one item
-    _menuRequestConfig();
+    item_list_t *list = selected_item->item->userdata;
 
-    WaitSema(menuSemaId);
-    theme_element_t *elem = gTheme->infoElems.first;
-    while (elem) {
-        if (elem->drawElem)
-            elem->drawElem(selected_item, selected_item->item->current, itemConfig, elem);
-
-        elem = elem->next;
+    if (list->mode == APP_MODE) {
+        menuRenderElements(gTheme->appsInfoElems.first);
+        gTheme->itemsList = gTheme->appsItemsList;
+    } else {
+        menuRenderElements(gTheme->infoElems.first);
+        gTheme->itemsList = gTheme->gamesItemsList;
     }
-    SignalSema(menuSemaId);
 }
 
 void menuHandleInputInfo()
@@ -981,6 +1043,19 @@ void menuRenderGameMenu()
     if (!gameMenu)
         return;
 
+    // If the device menu that has the selected game suddenly goes invisible (device was removed), switch
+    // back to the game list menu.
+    if (selected_item->item->visible == 0) {
+        guiSwitchScreen(GUI_SCREEN_MAIN);
+        return;
+    }
+
+    // If we enter the game settings menu and there's no selected item bail out. I'm not entirely sure how we get into
+    // this state but it seems to happen on some consoles when transitioning from the game settings menu back to the game
+    // list menu.
+    if (selected_item->item->current == NULL)
+        return;
+
     // draw the animated menu
     if (!gameMenuCurrent)
         gameMenuCurrent = gameMenu;
@@ -1011,9 +1086,8 @@ void menuRenderGameMenu()
         // render, advance
         fntRenderString(gTheme->fonts[0], 320, y, ALIGN_CENTER, 0, 0, submenuItemGetText(&it->item), (cp == sitem) ? gTheme->selTextColor : gTheme->textColor);
         y += spacing;
-
-        if (cp == 4 || cp == 6)
-            y += spacing / 2; // leave a blank space before rendering Save & Remove Settings.
+        if (cp == (GAME_SAVE_CHANGES - 1) || cp == (GAME_REMOVE_CHANGES - 1))
+            y += spacing / 2;
     }
 
     // hints
@@ -1061,6 +1135,11 @@ void menuHandleInputGameMenu()
             guiGameShowVMCMenu(selected_item->item->current->item.id, selected_item->item->userdata);
         } else if (menuID == GAME_PADEMU_SETTINGS) {
             guiGameShowPadEmuConfig(0);
+        } else if (menuID == GAME_PADMACRO_SETTINGS) {
+            guiGameShowPadMacroConfig(0);
+#endif
+        } else if (menuID == GAME_OSD_LANGUAGE_SETTINGS) {
+            guiGameShowOSDLanguageConfig(0);
         } else if (menuID == GAME_SAVE_CHANGES) {
             if (guiGameSaveConfig(itemConfig, selected_item->item->userdata))
                 configSetInt(itemConfig, CONFIG_ITEM_CONFIGSOURCE, CONFIG_SOURCE_USER);
@@ -1112,6 +1191,10 @@ void menuRenderAppMenu()
     int spacing = 25;
     int y = (gTheme->usedHeight >> 1) - (spacing * (count >> 1));
     int cp = 0; // current position
+
+    // app title
+    fntRenderString(gTheme->fonts[0], 320, 20, ALIGN_CENTER, 0, 0, selected_item->item->current->item.text, gTheme->selTextColor);
+
     for (it = appMenu; it; it = it->next, cp++) {
         // render, advance
         fntRenderString(gTheme->fonts[0], 320, y, ALIGN_CENTER, 0, 0, submenuItemGetText(&it->item), (cp == sitem) ? gTheme->selTextColor : gTheme->textColor);

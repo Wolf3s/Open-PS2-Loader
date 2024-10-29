@@ -25,12 +25,14 @@
 #include <kernel.h>
 #include <syscallnr.h>
 #include "include/cheat_api.h"
+#include "coreconfig.h"
 
 /*---------------------------------*/
 /* Setup PS2RD Cheat Engine params */
 /*---------------------------------*/
 void SetupCheats()
 {
+    USE_LOCAL_EECORE_CONFIG;
     code_t code;
 
     int i, j, k, nextCodeCanBeHook;
@@ -41,8 +43,8 @@ void SetupCheats()
 
     while (i < MAX_CHEATLIST) {
 
-        code.addr = gCheatList[i];
-        code.val = gCheatList[i + 1];
+        code.addr = config->gCheatList[i];
+        code.val = config->gCheatList[i + 1];
         i += 2;
 
         if ((code.addr == 0) && (code.val == 0))
@@ -60,7 +62,7 @@ void SetupCheats()
             k++;
         }
         // Discard any false positives from being possible hooks
-        if ((code.addr & 0xf0000000) == 0x40000000 || 0x30000000) {
+        if ((code.addr & 0xf0000000) == 0x40000000 || (code.addr & 0xf0000000) == 0x30000000) {
             nextCodeCanBeHook = 0;
         } else {
             nextCodeCanBeHook = 1;

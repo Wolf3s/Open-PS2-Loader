@@ -15,6 +15,7 @@
 #include "modmgr.h"
 #include "util.h"
 #include "syshook.h"
+#include "coreconfig.h"
 
 extern int _iop_reboot_count;
 static int imgdrv_offset_ioprpimg = 0;
@@ -22,6 +23,7 @@ static int imgdrv_offset_ioprpsiz = 0;
 
 static void ResetIopSpecial(const char *args, unsigned int arglen)
 {
+    USE_LOCAL_EECORE_CONFIG;
     int i;
     void *pIOP_buffer, *IOPRP_img, *imgdrv_irx;
     unsigned int length_rounded, CommandLen, size_IOPRP_img, size_imgdrv_irx;
@@ -32,11 +34,11 @@ static void ResetIopSpecial(const char *args, unsigned int arglen)
         command[arglen] = '\0'; /* In a normal IOP reset process, the IOP reset command line will be NULL-terminated properly somewhere.
                         Since we're now taking things into our own hands, NULL terminate it here.
                         Some games like SOCOM3 will use a command line that isn't NULL terminated, resulting in things like "cdrom0:\RUN\IRX\DNAS300.IMGG;1" */
-        _strcpy(&command[arglen + 1], "img0:");
-        CommandLen = arglen + 6;
+        _strcpy(&command[arglen + 1], "host0:");
+        CommandLen = arglen + 7;
     } else {
-        _strcpy(command, "img0:");
-        CommandLen = 5;
+        _strcpy(command, "host0:");
+        CommandLen = 6;
     }
 
     GetOPLModInfo(OPL_MODULE_ID_IOPRP, &IOPRP_img, &size_IOPRP_img);
@@ -96,27 +98,32 @@ static void ResetIopSpecial(const char *args, unsigned int arglen)
     DPRINTF("Loading extra IOP modules...\n");
 
 #ifdef __LOAD_DEBUG_MODULES
+#if !defined(TTY_PPC)
     LoadOPLModule(OPL_MODULE_ID_SMSTCPIP, 0, 0, NULL);
     LoadOPLModule(OPL_MODULE_ID_SMAP, 0, g_ipconfig_len, g_ipconfig);
+#endif
 #ifdef __DECI2_DEBUG
     LoadOPLModule(OPL_MODULE_ID_DRVTIF, 0, 0, NULL);
     LoadOPLModule(OPL_MODULE_ID_TIFINET, 0, 0, NULL);
-#else
+#elif defined(TTY_UDP)
     LoadOPLModule(OPL_MODULE_ID_UDPTTY, 0, 0, NULL);
+    LoadOPLModule(OPL_MODULE_ID_IOPTRAP, 0, 0, NULL);
+#elif defined(TTY_PPC)
+    LoadOPLModule(OPL_MODULE_ID_PPCTTY, 0, 0, NULL);
     LoadOPLModule(OPL_MODULE_ID_IOPTRAP, 0, 0, NULL);
 #endif
 #endif
 
 #ifdef PADEMU
-#define PADEMU_ARG || EnablePadEmuOp
+#define PADEMU_ARG || config->EnablePadEmuOp
 #else
 #define PADEMU_ARG
 #endif
-    if (GameMode == BDM_USB_MODE PADEMU_ARG) {
+    if (config->GameMode == BDM_USB_MODE PADEMU_ARG) {
         LoadOPLModule(OPL_MODULE_ID_USBD, 0, 11, "thpri=2,3");
     }
 
-    switch (GameMode) {
+    switch (config->GameMode) {
         case BDM_USB_MODE:
             LoadOPLModule(OPL_MODULE_ID_USBMASSBD, 0, 0, NULL);
             break;
@@ -144,9 +151,10 @@ static void ResetIopSpecial(const char *args, unsigned int arglen)
 /*----------------------------------------------------------------*/
 int New_Reset_Iop(const char *arg, int arglen)
 {
+    USE_LOCAL_EECORE_CONFIG;
     DPRINTF("New_Reset_Iop start!\n");
     if (EnableDebug)
-        GS_BGCOLOUR = 0xFF00FF; // Purple
+        DBGCOL(0xFF00FF, IOPMGR, "New_Reset_Iop()");
 
     SifInitRpc(0);
 
@@ -167,25 +175,28 @@ int New_Reset_Iop(const char *arg, int arglen)
 
     ResetIopSpecial(NULL, 0);
     if (EnableDebug)
-        GS_BGCOLOUR = 0x00A5FF; // Orange
+        DBGCOL(0x00A5FF, IOPMGR, "ResetIopSpecial (without args) finished!");
 
     if (arglen > 0) {
         ResetIopSpecial(&arg[10], arglen - 10);
         if (EnableDebug)
-            GS_BGCOLOUR = 0x00FFFF; // Yellow
+            DBGCOL(0x00FFFF, IOPMGR, "ResetIopSpecial (with args) finished!");
     }
 
     if (iop_reboot_count >= 2) {
 #ifdef PADEMU
-        PadEmuSettings |= (LoadOPLModule(OPL_MODULE_ID_MCEMU, 0, 0, NULL) > 0) << 24;
+        config->PadEmuSettings |= (LoadOPLModule(OPL_MODULE_ID_MCEMU, 0, 0, NULL) > 0) << 24;
 #else
         LoadOPLModule(OPL_MODULE_ID_MCEMU, 0, 0, NULL);
 #endif
     }
 
 #ifdef PADEMU
-    if (iop_reboot_count >= 2 && EnablePadEmuOp) {
-        LoadOPLModule(OPL_MODULE_ID_PADEMU, 0, 4, (char *)&PadEmuSettings);
+    if (iop_reboot_count >= 2 && config->EnablePadEmuOp) {
+        char args_for_pademu[8];
+        memcpy(args_for_pademu, &config->PadEmuSettings, 4);
+        memcpy(args_for_pademu + 4, &config->PadMacroSettings, 4);
+        LoadOPLModule(OPL_MODULE_ID_PADEMU, 0, sizeof(args_for_pademu), args_for_pademu);
     }
 #endif
 
@@ -200,7 +211,7 @@ int New_Reset_Iop(const char *arg, int arglen)
         set_reg_hook = 4;
 
     if (EnableDebug)
-        GS_BGCOLOUR = 0x000000; // Black
+        BGCOLND(0x000000);
 
     return 1;
 }

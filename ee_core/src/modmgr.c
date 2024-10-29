@@ -11,10 +11,10 @@
 #include "modules.h"
 #include "modmgr.h"
 #include "util.h"
+#include "coreconfig.h"
 
 static SifRpcClientData_t _lf_cd;
 static int _lf_init = 0;
-extern void *ModStorageStart;
 
 /*----------------------------------------------------------------------------------------*/
 /* Init LOADFILE RPC.                                                                     */
@@ -131,8 +131,9 @@ int LoadMemModule(int mode, void *modptr, unsigned int modsize, int arg_len, con
 
 int GetOPLModInfo(int id, void **pointer, unsigned int *size)
 {
+    USE_LOCAL_EECORE_CONFIG;
     int i, result;
-    irxtab_t *irxtable = (irxtab_t *)ModStorageStart;
+    irxtab_t *irxtable = (irxtab_t *)config->ModStorageStart;
 
     for (i = 0, result = -1; i < irxtable->count; i++) {
         if (GET_OPL_MOD_ID(irxtable->modules[i].info) == id) {
@@ -153,10 +154,28 @@ int LoadOPLModule(int id, int mode, int arg_len, const char *args)
     unsigned int size;
 
     if ((result = GetOPLModInfo(id, &pointer, &size)) == 0) {
-        if (size > 0)
+        if (size > 0) {
             result = LoadMemModule(mode, pointer, size, arg_len, args);
+            if (result < 1) { // El_isra: only check for MODLOAD errors for simplicity
+                if (EnableDebug) {
+                    DBGCOL(0x00FFDC, MODMGR, "IRX loading error (from MODLOAD)");
+                    delay(3);
+                }
+                if (result == -400) {
+                    DBGCOL_BLNK(1, 0x0000FF, true, MODMGR, "MODLOAD: out of IOP Memory"); // yellow blinking
+                    while (1)
+                        ;
+                }
+            }
+        } else {
+            if (EnableDebug) {
+                DBGCOL(0xDCFF00, MODMGR, "IRX size is 0 or less");
+                delay(3);
+            }
+        }
     }
 
+    BGCOLND(0x000000);
     return result;
 }
 

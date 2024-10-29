@@ -31,7 +31,7 @@ static inline int CopyToFIFOWithDMA(volatile u8 *smap_regbase, void *buffer, int
     /*  Non-Sony: the original block size was (32*4 = 128) bytes.
         However, that resulted in slightly lower performance due to the IOP needing to copy more data. */
     if ((NumBlocks = length >> 6) > 0) {
-        if (dev9DmaTransfer(1, buffer, NumBlocks << 16 | 0x10, DMAC_FROM_MEM) >= 0) {
+        if (SpdDmaTransfer(1, buffer, NumBlocks << 16 | 0x10, DMAC_FROM_MEM) >= 0) {
             result = NumBlocks << 6;
         } else
             result = 0;
@@ -86,7 +86,7 @@ static inline void CopyFromFIFO(volatile u8 *smap_regbase, void *buffer, unsigne
 
     if ((result = CopyFromFIFOWithDMA(smap_regbase, buffer, length)) > 0) {
         length -= result;
-        buffer = buffer + result;
+        buffer = (void *)((u8 *)buffer + result);
     }
 
     __asm__ __volatile__(

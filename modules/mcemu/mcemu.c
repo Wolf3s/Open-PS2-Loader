@@ -68,6 +68,7 @@ void StartNow(void *param)
 
     /* configuring the virtual memory cards */
     if (!(r = mc_configure(memcards))) {
+        (void)r;
         DPRINTF("mc_configure return %d.\n", r);
         readyToGo = MODULE_NO_RESIDENT_END;
         return;
@@ -121,6 +122,9 @@ void InstallSecrmanHook(void *exp)
 /* Installs handlers for SIO2MAN's routine for enabled virtual memory cards */
 void InstallSio2manHook(void *exp, int ver)
 {
+    psio2_mc_transfer_init = GetExportEntry(exp, 24);
+    psio2_transfer_reset = GetExportEntry(exp, 26);
+
     /* hooking SIO2MAN entry #25 (used by MCMAN and old PADMAN) */
     pSio2man25 = HookExportEntry(exp, 25, hookSio2man25);
     /* hooking SIO2MAN entry #51 (used by MC2_* modules and PADMAN) */
@@ -458,6 +462,12 @@ u32 *hookSio2man67()
 /* SIO2 Command handler */
 void Sio2McEmu(Sio2Packet *sd)
 {
+    /*
+     * Unlock SIO2 access for MX4SIO
+     * NOTE: we are assuming MC's are only accessed when LOCKED
+     */
+    psio2_transfer_reset();
+
     if ((sd->ctrl[0] & 0xF0) == 0x70) {
         register u32 ddi, *pctl, result, length;
         register u8 *wdma, *rdma;
@@ -590,6 +600,12 @@ void Sio2McEmu(Sio2Packet *sd)
     }
 
     /* DPRINTF("SIO2 status 0x%X\n", sd->iostatus); */
+
+    /*
+     * Lock SIO2 access again as the user expects it
+     * NOTE: we are assuming MC's are only accessed when LOCKED
+     */
+    psio2_mc_transfer_init();
 }
 //------------------------------
 // endfunc
@@ -681,7 +697,7 @@ restart:
         u32 csize = (size < 16) ? size : 16;
         mips_memcpy(buf, mcd->cbufp, csize);
         mcd->rcoff = (csize > 12) ? 0 : (mcd->rcoff - csize);
-        buf += csize;
+        buf = (void *)((u8 *)buf + csize);
         size -= csize;
         if (size <= 0)
             return 1;
@@ -699,7 +715,7 @@ restart:
         mcd->rcoff += 3;
     }
     if (mcd->rdoff == mcd->cspec.PageSize) {
-        buf += size;
+        buf = (void *)((u8 *)buf + size);
         size = tot_size - size;
         mcd->rpage++;
         mcd->rdoff = 0;

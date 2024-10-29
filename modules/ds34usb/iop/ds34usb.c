@@ -295,7 +295,7 @@ static void readReport(u8 *data, int pad)
             ds34pad[pad].data[16] = report->PressureL2; // L2
             ds34pad[pad].data[17] = report->PressureR2; // R2
 
-            if (report->PSButtonState && report->Power != 0xEE) // display battery level
+            if (report->PSButton && report->Power != 0xEE) // display battery level
                 ds34pad[pad].oldled[0] = power_level[report->Power];
             else
                 ds34pad[pad].oldled[0] = led_patterns[pad][1];
@@ -349,14 +349,14 @@ static void readReport(u8 *data, int pad)
             }
 
             if (report->TPad) {
-                if (!report->Finger1Active) {
+                if (!report->nFinger1Active) {
                     if (report->Finger1X < 960)
                         report->Share = 1;
                     else
                         report->Option = 1;
                 }
 
-                if (!report->Finger2Active) {
+                if (!report->nFinger2Active) {
                     if (report->Finger2X < 960)
                         report->Share = 1;
                     else
@@ -716,16 +716,16 @@ void *rpc_sf(int cmd, void *data, int size)
             *(u8 *)data = ds34usb_get_status(*(u8 *)data);
             break;
         case DS34USB_GET_BDADDR:
-            *(u8 *)data = ds34usb_get_bdaddr((u8 *)(data + 1), *(u8 *)data);
+            *(u8 *)data = ds34usb_get_bdaddr(((u8 *)data + 1), *(u8 *)data);
             break;
         case DS34USB_SET_BDADDR:
-            ds34usb_set_bdaddr((u8 *)(data + 1), *(u8 *)data);
+            ds34usb_set_bdaddr(((u8 *)data + 1), *(u8 *)data);
             break;
         case DS34USB_SET_RUMBLE:
-            ds34usb_set_rumble(*(u8 *)(data + 1), *(u8 *)(data + 2), *(u8 *)data);
+            ds34usb_set_rumble(*((u8 *)data + 1), *((u8 *)data + 2), *(u8 *)data);
             break;
         case DS34USB_SET_LED:
-            ds34usb_set_led((u8 *)(data + 1), *(u8 *)data);
+            ds34usb_set_led(((u8 *)data + 1), *(u8 *)data);
             break;
         case DS34USB_GET_DATA:
             ds34usb_get_data((char *)data, 18, *(u8 *)data);

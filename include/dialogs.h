@@ -34,6 +34,9 @@ enum UI_ITEMS {
     CFG_HDDMODE,
     CFG_ETHMODE,
     CFG_APPMODE,
+    CFG_BDMCACHE,
+    CFG_HDDCACHE,
+    CFG_SMBCACHE,
     CFG_ENABLEILK,
     CFG_ENABLEMX4SIO,
     CFG_LASTPLAYED,
@@ -53,8 +56,14 @@ enum UI_ITEMS {
 
     CFG_SFX,
     CFG_BOOT_SND,
+    CFG_BGM,
     CFG_SFX_VOLUME,
     CFG_BOOT_SND_VOLUME,
+    CFG_BGM_VOLUME,
+    CFG_DEFAULT_BGM_PATH,
+
+    CFG_XSENSITIVITY,
+    CFG_YSENSITIVITY,
 
     NETCFG_SHOW_ADVANCED_OPTS,
     NETCFG_PS2_IP_ADDR_TYPE,
@@ -136,6 +145,13 @@ enum UI_ITEMS {
     NETUPD_BTN_START,
     NETUPD_BTN_CANCEL,
 
+    OSD_LANGUAGE_SOURCE,
+    OSD_LANGUAGE_ENABLE,
+    OSD_LANGUAGE_VALUE,
+    OSD_TVASPECT_VALUE,
+    OSD_VMODE_VALUE,
+
+#ifdef PADEMU
     PADEMU_GLOBAL_BUTTON,
     PADCFG_PADEMU_SOURCE,
     PADCFG_PADEMU_CONFIG,
@@ -165,6 +181,18 @@ enum UI_ITEMS {
     PADCFG_PADEMU_WORKAROUND,
     PADCFG_PADEMU_WORKAROUND_STR,
 
+    PADMACRO_GLOBAL_BUTTON,
+    PADMACRO_CFG_SOURCE,
+    PADMACRO_SLOWDOWN_L,
+    PADMACRO_SLOWDOWN_TOGGLE_L,
+    PADMACRO_SLOWDOWN_R,
+    PADMACRO_SLOWDOWN_TOGGLE_R,
+    PADMACRO_INVERT_LX,
+    PADMACRO_INVERT_LY,
+    PADMACRO_INVERT_RX,
+    PADMACRO_INVERT_RY,
+    PADMACRO_TURBO_SPEED,
+
     COMPAT_MODE_BASE = 250,
 };
 
@@ -177,6 +205,7 @@ enum UI_ITEMS {
 #define COMPAT_VMC2_DEFINE (COMPAT_VMC2_DEFINE_ID | COMPAT_NOEXIT)
 
 extern struct UIItem diaPadEmuConfig[];
+extern struct UIItem diaPadMacroConfig[];
 extern struct UIItem diaPadEmuInfo[];
 
 extern struct UIItem diaNetConfig[];
@@ -195,4 +224,5 @@ extern struct UIItem diaNetCompatUpdate[];
 extern struct UIItem diaParentalLockConfig[];
 extern struct UIItem diaBlockDevicesConfig[];
 
+extern struct UIItem diaOSDConfig[];
 #endif

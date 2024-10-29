@@ -15,6 +15,7 @@
 #include "patches.h"
 #include "padhook.h"
 #include "syshook.h"
+#include "coreconfig.h"
 
 #include <syscallnr.h>
 #include <ee_regs.h>
@@ -27,8 +28,6 @@ int iop_reboot_count = 0;
 int padOpen_hooked = 0;
 int disable_padOpen_hook = 1;
 
-extern void *ModStorageStart, *ModStorageEnd;
-extern void *eeloadCopy, *initUserMemory;
 extern void *_end;
 
 // Global data
@@ -37,6 +36,8 @@ int (*Old_SifSetReg)(u32 register_num, int register_value);
 int (*Old_ExecPS2)(void *entry, void *gp, int num_args, char *args[]);
 int (*Old_CreateThread)(ee_thread_t *thread_param);
 void (*Old_Exit)(s32 exit_code);
+void (*Old_SetOsdConfigParam)(ConfigParam *osdconfig);
+void (*Old_GetOsdConfigParam)(ConfigParam *osdconfig);
 
 /*----------------------------------------------------------------------------------------*/
 /* This function is called when SifSetDma catches a reboot request.                       */
@@ -64,6 +65,7 @@ u32 New_SifSetDma(SifDmaTransfer_t *sdd, s32 len)
 // ------------------------------------------------------------------------
 void sysLoadElf(char *filename, int argc, char **argv)
 {
+    USE_LOCAL_EECORE_CONFIG;
     int r;
     t_ExecData elf;
 
@@ -85,12 +87,12 @@ void sysLoadElf(char *filename, int argc, char **argv)
     DPRINTF("t_loadElf: elf path = '%s'\n", filename);
 
     if (EnableDebug)
-        GS_BGCOLOUR = 0x00ff00; // Green
+        DBGCOL(0x00FF00, SYSHOOK, "WipeUserMemory()");
 
     DPRINTF("t_loadElf: cleaning user memory...");
 
     // wipe user memory
-    WipeUserMemory((void *)&_end, (void *)ModStorageStart);
+    WipeUserMemory((void *)&_end, (void *)config->ModStorageStart);
     // The upper half (from ModStorageEnd to GetMemorySize()) is taken care of by LoadExecPS2().
     // WipeUserMemory((void *)ModStorageEnd, (void *)GetMemorySize());
 
@@ -126,13 +128,14 @@ void sysLoadElf(char *filename, int argc, char **argv)
     DPRINTF(" failed\n");
 
     // Error
-    GS_BGCOLOUR = 0xffffff; // White    - shouldn't happen.
+    DBGCOL(0xFFFFFF, LOADELF, "sysLoadElf() error. hitting function end");
     SleepThread();
 }
 
 static void unpatchEELOADCopy(void)
 {
-    vu32 *p = (vu32 *)eeloadCopy;
+    USE_LOCAL_EECORE_CONFIG;
+    vu32 *p = (vu32 *)config->eeloadCopy;
 
     p[1] = 0x0240302D; /* daddu    a2, s2, zero */
     p[2] = 0x8FA50014; /* lw       a1, 0x0014(sp) */
@@ -141,7 +144,8 @@ static void unpatchEELOADCopy(void)
 
 static void unpatchInitUserMemory(void)
 {
-    vu16 *p = (vu16 *)initUserMemory;
+    USE_LOCAL_EECORE_CONFIG;
+    vu16 *p = (vu16 *)config->initUserMemory;
 
     /*
      * Reset the start of user memory to 0x00082000, by changing the immediate value being loaded into $a0.
@@ -159,12 +163,50 @@ void sysExit(s32 exit_code)
     IGR_Exit(exit_code);
 }
 
+void hook_SetOsdConfigParam(ConfigParam *osdconfig)
+{
+    USE_LOCAL_EECORE_CONFIG;
+
+    DPRINTF("%s: called\n", __func__);
+    config->CustomOSDConfigParam.spdifMode = osdconfig->spdifMode;
+    config->CustomOSDConfigParam.screenType = osdconfig->screenType;
+    config->CustomOSDConfigParam.videoOutput = osdconfig->videoOutput;
+    config->CustomOSDConfigParam.japLanguage = osdconfig->japLanguage;
+    config->CustomOSDConfigParam.ps1drvConfig = osdconfig->ps1drvConfig;
+    config->CustomOSDConfigParam.version = osdconfig->version;
+    config->CustomOSDConfigParam.language = osdconfig->language;
+    config->CustomOSDConfigParam.timezoneOffset = osdconfig->timezoneOffset;
+}
+
+void hook_GetOsdConfigParam(ConfigParam *osdconfig)
+{
+    USE_LOCAL_EECORE_CONFIG;
+
+    DPRINTF("%s: called\n", __func__);
+    osdconfig->spdifMode = config->CustomOSDConfigParam.spdifMode;
+    osdconfig->screenType = config->CustomOSDConfigParam.screenType;
+    osdconfig->videoOutput = config->CustomOSDConfigParam.videoOutput;
+    osdconfig->japLanguage = config->CustomOSDConfigParam.japLanguage;
+    osdconfig->ps1drvConfig = config->CustomOSDConfigParam.ps1drvConfig;
+    osdconfig->version = config->CustomOSDConfigParam.version;
+    osdconfig->language = config->CustomOSDConfigParam.language;
+    osdconfig->timezoneOffset = config->CustomOSDConfigParam.timezoneOffset;
+}
+
 /*----------------------------------------------------------------------------------------*/
 /* Replace SifSetDma, SifSetReg, LoadExecPS2 syscalls in kernel. (Game Loader)            */
 /* Replace CreateThread and ExecPS2 syscalls in kernel. (In Game Reset)                   */
 /*----------------------------------------------------------------------------------------*/
 void Install_Kernel_Hooks(void)
 {
+    USE_LOCAL_EECORE_CONFIG;
+    if (config->enforceLanguage) {
+        Old_SetOsdConfigParam = GetSyscallHandler(__NR_SetOsdConfigParam);
+        SetSyscall(__NR_SetOsdConfigParam, &hook_SetOsdConfigParam);
+        Old_GetOsdConfigParam = GetSyscallHandler(__NR_GetOsdConfigParam);
+        SetSyscall(__NR_GetOsdConfigParam, &hook_GetOsdConfigParam);
+    }
+
     Old_SifSetDma = GetSyscallHandler(__NR_SifSetDma);
     SetSyscall(__NR_SifSetDma, &Hook_SifSetDma);
 
@@ -180,8 +222,8 @@ void Install_Kernel_Hooks(void)
         SetSyscall(__NR__ExecPS2, &Hook_ExecPS2);
     }
 
-    Old_Exit = GetSyscallHandler(__NR__Exit);
-    SetSyscall(__NR__Exit, &Hook_Exit);
+    Old_Exit = GetSyscallHandler(__NR_KExit);
+    SetSyscall(__NR_KExit, &Hook_Exit);
 }
 
 /*----------------------------------------------------------------------------------------------*/
@@ -190,9 +232,14 @@ void Install_Kernel_Hooks(void)
 /*----------------------------------------------------------------------------------------------*/
 void Remove_Kernel_Hooks(void)
 {
+    USE_LOCAL_EECORE_CONFIG;
+    if (config->enforceLanguage) {
+        SetSyscall(__NR_SetOsdConfigParam, Old_SetOsdConfigParam);
+        SetSyscall(__NR_GetOsdConfigParam, Old_GetOsdConfigParam);
+    }
     SetSyscall(__NR_SifSetDma, Old_SifSetDma);
     SetSyscall(__NR_SifSetReg, Old_SifSetReg);
-    SetSyscall(__NR__Exit, Old_Exit);
+    SetSyscall(__NR_KExit, Old_Exit);
 
     DI();
     ee_kmode_enter();

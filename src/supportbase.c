@@ -16,6 +16,8 @@
 #include <io_common.h>   // FIO_MT_RDONLY
 #include <ps2sdkapi.h>   // lseek64
 
+#include "../modules/isofs/zso.h"
+
 /// internal linked list used to populate the list from directory listing
 struct game_list_t
 {
@@ -55,13 +57,13 @@ int sbCreateSemaphore(void)
 }
 
 // 0 = Not ISO disc image, GAME_FORMAT_OLD_ISO = legacy ISO disc image (filename follows old naming requirement), GAME_FORMAT_ISO = plain ISO image.
-static int isValidIsoName(char *name, int *pNameLen)
+int isValidIsoName(char *name, int *pNameLen)
 {
     // Old ISO image naming format: SCUS_XXX.XX.ABCDEFGHIJKLMNOP.iso
 
     // Minimum is 17 char, GameID (11) + "." (1) + filename (1 min.) + ".iso" (4)
     int size = strlen(name);
-    if (strcasecmp(&name[size - 4], ".iso") == 0) {
+    if (strcasecmp(&name[size - 4], ".iso") == 0 || strcasecmp(&name[size - 4], ".zso") == 0) {
         if ((size >= 17) && (name[4] == '_') && (name[8] == '.') && (name[11] == '.')) {
             *pNameLen = size - 16;
             return GAME_FORMAT_OLD_ISO;
@@ -81,6 +83,9 @@ static int GetStartupExecName(const char *path, char *filename, int maxlength)
     int ret;
 
     if ((ret = ps2cnfGetBootFile(path, ps2disc_boot)) == 0) {
+        int length = 0;
+        const char *start;
+
         /* Skip the device name part of the path ("cdrom0:\"). */
         key = ps2disc_boot;
 
@@ -92,11 +97,29 @@ static int GetStartupExecName(const char *path, char *filename, int maxlength)
         }
 
         ++key;
-        if (*key == '\\')
+        while (*key == '\\') {
             key++;
+        }
 
-        strncpy(filename, key, maxlength);
-        filename[maxlength] = '\0';
+        start = key;
+
+        while ((*key != ';') && (*key != '\0')) {
+            length++;
+            key++;
+        }
+
+        if (length > maxlength) {
+            length = maxlength;
+        }
+
+        if (length == 0) {
+            LOG("GetStartupExecName: serial len 0 ':' (%s).\n", ps2disc_boot);
+            return -1;
+        }
+
+        strncpy(filename, start, length);
+        filename[length] = '\0';
+        LOG("GetStartupExecName: serial len %d %s \n", length, filename);
 
         return 0;
     } else {
@@ -266,6 +289,7 @@ static int scanForISO(char *path, char type, struct game_list_t **glist)
     char fullpath[256], startup[GAME_STARTUP_MAX];
     struct dirent *dirent;
     DIR *dir;
+    struct stat statbuf;
 
     cache.games = NULL;
     cache.count = 0;
@@ -278,6 +302,8 @@ static int scanForISO(char *path, char type, struct game_list_t **glist)
 
                 if (NameLen > ISO_GAME_NAME_MAX)
                     continue; // Skip files that cannot be supported properly.
+
+                snprintf(fullpath, sizeof(fullpath), "%s/%s", path, dirent->d_name);
 
                 if (format == GAME_FORMAT_OLD_ISO) {
                     struct game_list_t *next = (struct game_list_t *)malloc(sizeof(struct game_list_t));
@@ -301,8 +327,6 @@ static int scanForISO(char *path, char type, struct game_list_t **glist)
                     }
                 } else {
                     if (queryISOGameListCache(&cache, &cachedGInfo, dirent->d_name) != 0) {
-                        sprintf(fullpath, "%s/%s", path, dirent->d_name);
-
                         if ((MountFD = fileXioMount("iso:", fullpath, FIO_MT_RDONLY)) >= 0) {
                             if (GetStartupExecName("iso:/SYSTEM.CNF;1", startup, GAME_STARTUP_MAX - 1) == 0) {
                                 struct game_list_t *next = (struct game_list_t *)malloc(sizeof(struct game_list_t));
@@ -355,7 +379,12 @@ static int scanForISO(char *path, char type, struct game_list_t **glist)
                 game->parts = 1;
                 game->media = type;
                 game->format = format;
-                game->sizeMB = dirent->d_stat.st_size >> 20;
+
+                if (stat(fullpath, &statbuf) == 0) {
+                    game->sizeMB = statbuf.st_size >> 20;
+                } else {
+                    game->sizeMB = 0;
+                }
 
                 count++;
             }
@@ -436,7 +465,7 @@ int sbReadList(base_game_info_t **list, const char *prefix, int *fsize, int *gam
                     /* TODO: size calculation is very slow
                     implmented some caching, or do not touch at all */
 
-                    //calculate total size for individual game
+                    // calculate total size for individual game
                     /*int ulfd = 1;
                     u8 part;
                     unsigned int name_checksum = USBA_crc32(g->name);
@@ -476,16 +505,48 @@ int sbReadList(base_game_info_t **list, const char *prefix, int *fsize, int *gam
     return count;
 }
 
+extern int probed_fd;
+extern u32 probed_lba;
+extern u8 IOBuffer[2048];
+
+static int ProbeZISO(int fd)
+{
+    struct
+    {
+        ZISO_header header;
+        u32 first_block;
+    } ziso_data;
+    lseek(fd, 0, SEEK_SET);
+    if (read(fd, &ziso_data, sizeof(ziso_data)) == sizeof(ziso_data) && ziso_data.header.magic == ZSO_MAGIC) {
+        // initialize ZSO
+        ziso_init(&ziso_data.header, ziso_data.first_block);
+        // set ISO file descriptor for ZSO reader
+        probed_fd = fd;
+        probed_lba = 0;
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
 u32 sbGetISO9660MaxLBA(const char *path)
 {
     u32 maxLBA;
-    FILE *file;
+    int file;
 
-    if ((file = fopen(path, "rb")) != NULL) {
-        fseek(file, 16 * 2048 + 80, SEEK_SET);
-        if (fread(&maxLBA, sizeof(maxLBA), 1, file) != 1)
-            maxLBA = 0;
-        fclose(file);
+    if ((file = open(path, O_RDONLY, 0666)) >= 0) {
+        if (ProbeZISO(file)) {
+            if (ziso_read_sector(IOBuffer, 16, 1) == 1) {
+                maxLBA = *(u32 *)(IOBuffer + 80);
+            } else {
+                maxLBA = 0;
+            }
+        } else {
+            lseek(file, 16 * 2048 + 80, SEEK_SET);
+            if (read(file, &maxLBA, sizeof(maxLBA)) != sizeof(maxLBA))
+                maxLBA = 0;
+        }
+        close(file);
     } else {
         maxLBA = 0;
     }
@@ -495,38 +556,23 @@ u32 sbGetISO9660MaxLBA(const char *path)
 
 int sbProbeISO9660(const char *path, base_game_info_t *game, u32 layer1_offset)
 {
-    int result;
-    FILE *file;
-    char buffer[6];
-
-    result = -1;
-    if (game->media == SCECdPS2DVD) { // Only DVDs can have multiple layers.
-        if ((file = fopen(path, "rb")) != NULL) {
-            if (fseek(file, layer1_offset * 2048, SEEK_SET) == 0) {
-                if ((fread(buffer, 1, sizeof(buffer), file) == sizeof(buffer)) &&
-                    ((buffer[0x00] == 1) && (!strncmp(&buffer[0x01], "CD001", 5)))) {
-                    result = 0;
-                }
-            }
-            fclose(file);
-        }
-    }
-
-    return result;
-}
-
-int sbProbeISO9660_64(const char *path, base_game_info_t *game, u32 layer1_offset)
-{
-    int result, fd;
+    int result = -1, fd;
     char buffer[6];
 
     result = -1;
     if (game->media == SCECdPS2DVD) { // Only DVDs can have multiple layers.
         if ((fd = open(path, O_RDONLY, 0666)) >= 0) {
-            if (lseek64(fd, (u64)layer1_offset * 2048, SEEK_SET) == (u64)layer1_offset * 2048) {
-                if ((read(fd, buffer, sizeof(buffer)) == sizeof(buffer)) &&
-                    ((buffer[0x00] == 1) && (!strncmp(&buffer[0x01], "CD001", 5)))) {
+            if (ProbeZISO(fd)) {
+                if (ziso_read_sector(IOBuffer, layer1_offset, 1) == 1 &&
+                    ((IOBuffer[0x00] == 1) && (!strncmp((char *)(&IOBuffer[0x01]), "CD001", 5)))) {
                     result = 0;
+                }
+            } else {
+                if (lseek64(fd, (u64)layer1_offset * 2048, SEEK_SET) == (u64)layer1_offset * 2048) {
+                    if ((read(fd, buffer, sizeof(buffer)) == sizeof(buffer)) &&
+                        ((buffer[0x00] == 1) && (!strncmp(&buffer[0x01], "CD001", 5)))) {
+                        result = 0;
+                    }
                 }
             }
             close(fd);
@@ -537,11 +583,7 @@ int sbProbeISO9660_64(const char *path, base_game_info_t *game, u32 layer1_offse
     return result;
 }
 
-static const struct cdvdman_settings_common cdvdman_settings_common_sample = {
-    0x69, 0x69,
-    0x1234,
-    0x39393939,
-    "B00BS"};
+static const struct cdvdman_settings_common cdvdman_settings_common_sample = CDVDMAN_SETTINGS_DEFAULT_COMMON;
 
 int sbPrepare(base_game_info_t *game, config_set_t *configSet, int size_cdvdman, void **cdvdman_irx, int *patchindex)
 {
@@ -591,15 +633,22 @@ int sbPrepare(base_game_info_t *game, config_set_t *configSet, int size_cdvdman,
         settings->flags |= IOPCORE_ENABLE_POFF;
     }
 
+    settings->fakemodule_flags = 0;
+    settings->fakemodule_flags |= FAKE_MODULE_FLAG_CDVDFSV;
+    settings->fakemodule_flags |= FAKE_MODULE_FLAG_CDVDSTM;
+
     InitGSMConfig(configSet);
 
     InitCheatsConfig(configSet);
 
     config_set_t *configGame = configGetByType(CONFIG_GAME);
 
+#ifdef PADEMU
     gPadEmuSource = 0;
     gEnablePadEmu = 0;
     gPadEmuSettings = 0;
+    gPadMacroSource = 0;
+    gPadMacroSettings = 0;
 
     if (configGetInt(configSet, CONFIG_ITEM_PADEMUSOURCE, &gPadEmuSource)) {
         configGetInt(configSet, CONFIG_ITEM_ENABLEPADEMU, &gEnablePadEmu);
@@ -607,6 +656,35 @@ int sbPrepare(base_game_info_t *game, config_set_t *configSet, int size_cdvdman,
     } else {
         configGetInt(configGame, CONFIG_ITEM_ENABLEPADEMU, &gEnablePadEmu);
         configGetInt(configGame, CONFIG_ITEM_PADEMUSETTINGS, &gPadEmuSettings);
+    }
+
+    if (configGetInt(configSet, CONFIG_ITEM_PADMACROSOURCE, &gPadMacroSource)) {
+        configGetInt(configSet, CONFIG_ITEM_PADMACROSETTINGS, &gPadMacroSettings);
+    } else {
+        configGetInt(configGame, CONFIG_ITEM_PADMACROSETTINGS, &gPadMacroSettings);
+    }
+
+    if (gEnablePadEmu) {
+        settings->fakemodule_flags |= FAKE_MODULE_FLAG_USBD;
+    }
+#endif
+    // sanitise the settings
+    gOSDLanguageSource = 0;
+    gOSDLanguageEnable = 0;
+    gOSDLanguageValue = 0;
+    gOSDTVAspectRatio = 0;
+    gOSDVideOutput = 0;
+
+    if (configGetInt(configSet, CONFIG_ITEM_OSD_SETTINGS_SOURCE, &gOSDLanguageSource)) {
+        configGetInt(configSet, CONFIG_ITEM_OSD_SETTINGS_ENABLE, &gOSDLanguageEnable);
+        configGetInt(configSet, CONFIG_ITEM_OSD_SETTINGS_LANGID, &gOSDLanguageValue);
+        configGetInt(configSet, CONFIG_ITEM_OSD_SETTINGS_TV_ASP, &gOSDTVAspectRatio);
+        configGetInt(configSet, CONFIG_ITEM_OSD_SETTINGS_VMODE, &gOSDVideOutput);
+    } else {
+        configGetInt(configGame, CONFIG_ITEM_OSD_SETTINGS_ENABLE, &gOSDLanguageEnable);
+        configGetInt(configGame, CONFIG_ITEM_OSD_SETTINGS_LANGID, &gOSDLanguageValue);
+        configGetInt(configGame, CONFIG_ITEM_OSD_SETTINGS_TV_ASP, &gOSDTVAspectRatio);
+        configGetInt(configGame, CONFIG_ITEM_OSD_SETTINGS_VMODE, &gOSDVideOutput);
     }
 
     *patchindex = i;
@@ -720,7 +798,14 @@ config_set_t *sbPopulateConfig(base_game_info_t *game, const char *prefix, const
     configSetStr(config, CONFIG_ITEM_NAME, game->name);
     configSetInt(config, CONFIG_ITEM_SIZE, game->sizeMB);
 
-    configSetStr(config, CONFIG_ITEM_FORMAT, game->format != GAME_FORMAT_USBLD ? "ISO" : "UL");
+    if (game->format != GAME_FORMAT_USBLD) {
+        if (!strcmp(game->extension, ".iso"))
+            configSetStr(config, CONFIG_ITEM_FORMAT, "ISO");
+        else if (!strcmp(game->extension, ".zso"))
+            configSetStr(config, CONFIG_ITEM_FORMAT, "ZSO");
+    } else if (game->format == GAME_FORMAT_USBLD)
+        configSetStr(config, CONFIG_ITEM_FORMAT, "UL");
+
     configSetStr(config, CONFIG_ITEM_MEDIA, game->media == SCECdPS2CD ? "CD" : "DVD");
 
     configSetStr(config, CONFIG_ITEM_STARTUP, game->startup);
@@ -753,7 +838,7 @@ void sbCreateFolders(const char *path, int createDiscImgFolders)
 int sbLoadCheats(const char *path, const char *file)
 {
     char cheatfile[64];
-    const int *cheatList;
+    const u32 *cheatList;
     int result;
 
     if (GetCheatsEnabled()) {

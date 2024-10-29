@@ -10,6 +10,7 @@
 #include "ee_core.h"
 #include "iopmgr.h"
 #include "util.h"
+#include "coreconfig.h"
 
 extern void *cdvdman_irx;
 extern int size_cdvdman_irx;
@@ -287,6 +288,7 @@ u64 _strtoul(const char *p)
 /*----------------------------------------------------------------------------------------*/
 void set_ipconfig(void)
 {
+    USE_LOCAL_EECORE_CONFIG;
     const char *SmapLinkModeArgs[4] = {
         "0x100",
         "0x080",
@@ -297,22 +299,22 @@ void set_ipconfig(void)
     g_ipconfig_len = 0;
 
     // add ip to g_ipconfig buf
-    strncpy(&g_ipconfig[g_ipconfig_len], g_ps2_ip, 16);
-    g_ipconfig_len += strlen(g_ps2_ip) + 1;
+    strncpy(&g_ipconfig[g_ipconfig_len], config->g_ps2_ip, 16);
+    g_ipconfig_len += strlen(config->g_ps2_ip) + 1;
 
     // add netmask to g_ipconfig buf
-    strncpy(&g_ipconfig[g_ipconfig_len], g_ps2_netmask, 16);
-    g_ipconfig_len += strlen(g_ps2_netmask) + 1;
+    strncpy(&g_ipconfig[g_ipconfig_len], config->g_ps2_netmask, 16);
+    g_ipconfig_len += strlen(config->g_ps2_netmask) + 1;
 
     // add gateway to g_ipconfig buf
-    strncpy(&g_ipconfig[g_ipconfig_len], g_ps2_gateway, 16);
-    g_ipconfig_len += strlen(g_ps2_gateway) + 1;
+    strncpy(&g_ipconfig[g_ipconfig_len], config->g_ps2_gateway, 16);
+    g_ipconfig_len += strlen(config->g_ps2_gateway) + 1;
 
     // Add Ethernet operation mode to g_ipconfig buf
-    if (g_ps2_ETHOpMode != ETH_OP_MODE_AUTO) {
+    if (config->g_ps2_ETHOpMode != ETH_OP_MODE_AUTO) {
         strncpy(&g_ipconfig[g_ipconfig_len], "-no_auto", 9);
         g_ipconfig_len += 9;
-        strncpy(&g_ipconfig[g_ipconfig_len], SmapLinkModeArgs[g_ps2_ETHOpMode - 1], 6);
+        strncpy(&g_ipconfig[g_ipconfig_len], SmapLinkModeArgs[config->g_ps2_ETHOpMode - 1], 6);
         g_ipconfig_len += 6;
     }
 }
@@ -389,4 +391,23 @@ void delay(int count)
         while (ret--)
             asm("nop\nnop\nnop\nnop");
     }
+}
+
+/*----------------------------------------------------------------------------------------*/
+/* for debug colors                                                                           */
+/*----------------------------------------------------------------------------------------*/
+void BlinkColour(u8 x, u32 colour, u8 forever)
+{
+    u8 i;
+    do {
+        delay(2);
+        BGCOLND(0x000000); // Black
+        //foo
+        for (i = 1; i <= x; i++) {
+            delay(1);
+            BGCOLND(colour); // Chosen colour
+            delay(1);
+            BGCOLND(0x000000); // Black
+        }
+    } while (forever);
 }

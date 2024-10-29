@@ -4,7 +4,7 @@ Copyright 2013, Ifcaro & jimmikaelkael
 Licensed under Academic Free License version 3.0
 Review the LICENSE file for further details.
 
-[![CI](https://github.com/ifcaro/Open-PS2-Loader/workflows/CI/badge.svg)](https://github.com/ifcaro/Open-PS2-Loader/actions?query=workflow%3ACI)
+[![CI](https://github.com/ps2homebrew/Open-PS2-Loader/actions/workflows/compilation.yml/badge.svg?branch=master)](https://github.com/ps2homebrew/Open-PS2-Loader/actions/workflows/compilation.yml)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/99032a6a180243bfa0d0e23efeb0608d)](https://www.codacy.com/gh/ps2homebrew/Open-PS2-Loader/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=ps2homebrew/Open-PS2-Loader&amp;utm_campaign=Badge_Grade)
 [![Discord](https://img.shields.io/discord/652861436992946216?style=flat&logo=Discord)](https://discord.gg/CVFUa9xh6B)
 [![Mega](https://img.shields.io/badge/Mega-%23D90007.svg?style=flat&logo=Mega&logoColor=white)](https://mega.nz/folder/Ndwi1bAK#oLWNhH_g-h0p4BoT4c556A)
@@ -12,13 +12,12 @@ Review the LICENSE file for further details.
 ## Introduction
 
 Open PS2 Loader (OPL) is a 100% Open source game and application loader for
-the PS2 and PS3 units. It supports three categories of devices: USB mass
-storage devices, SMB shares and the PlayStation 2 HDD unit. USB devices and
-SMB shares support USBExtreme and \*.ISO formats while PS2 HDD supports HDLoader
-format. It's now the most compatible homebrew loader.
+the PS2 and PS3 units. It supports five categories of devices: USB mass
+storage devices, MX4SIO (SD card connected to memory card port via adapter), iLink (SBP2 compliant storage devices via IEE1394), SMBv1 shares and the PlayStation 2 HDD unit.
+USB/SMB/MX4SIO/iLink support both USBExtreme and \*.ISO formats while PS2 HDD supports HDLoader format,
+all devices also support ZSO format (compressed ISO). It's now the most compatible homebrew loader.
 
-OPL developed continuously - anyone can contribute improvements to
-the project due to its open-source nature.
+OPL is developed continuously - anyone can contribute improvements to the project due to its open-source nature.
 
 You can visit the Open PS2 Loader forum at:
 
@@ -60,7 +59,7 @@ USB modes:
 | Folder | Description                                          | Modes       |
 | ------ | ---------------------------------------------------- | ----------- |
 | `CD`   | for games on CD media - i.e. blue-bottom discs       | USB and SMB |
-| `DVD`  | for DVD5 and DVD9 images if using the NTFS file system on USB or SMB; DVD9 images must be split and placed into the device root if using the FAT32 file system on USB or SMB | USB and SMB |
+| `DVD`  | for DVD5 and DVD9 images (if filesystem supports +4gb files) | USB and SMB |
 | `VMC`  | for Virtual Memory Card images - from 8MB up to 64MB | all         |
 | `CFG`  | for saving per-game configuration files              | all         |
 | `ART`  | for game art images                                  | all         |
@@ -70,7 +69,7 @@ USB modes:
 
 OPL will automatically create the above directory structure the first time you launch it and enable your favorite device.
 
-For HDD users, OPL will read `hdd0:__common/OPL/conf_hdd.cfg` for the config entry "hdd_partition" to use as your OPL partition.
+For HDD users, OPL will read `hdd0:__common/OPL/conf_hdd.cfg` for the config entry `hdd_partition` to use as your OPL partition.
 If not found a config file, a 128Mb `+OPL` partition will be created. You can edit the config if you wish to use/create a different partition.
 All partitions created by OPL will be 128Mb (it is not recommended to enlarge partitions as it will break LBAs, instead remove and recreate manually with uLaunchELF at a larger size if needed).
 
@@ -78,17 +77,16 @@ All partitions created by OPL will be 128Mb (it is not recommended to enlarge pa
 </details>
 
 <details>
-  <summary> <b> USB </b> </summary>
-<p>
+  <summary> <b> USB/MX4SIO/iLink </b> </summary>
 
-Game files on USB must be perfectly defragmented either file by file or
-by whole drive, and Dual Layer DVD9 images must be split to avoid the 4GB
-limitations of the FAT32 file system. We do not recommend using any programs.
-The best way for defragmenting - copy all files to pc, format USB, copy all files back.
+
+Game files should be *ideally* defragmented either file by file or by whole drive,
+and games larger than 4gb must use USBExtreme format if device uses FAT32 format (see OPLUtil or USBUtil programs).
+We do **not** recommend using any defrag programs. The best way for defragmenting - copy all files to pc, format USB, copy all files back.
 Repeat it once you faced defragmenting problem again.
 
-You also need a PC program to convert or split games into USB Advance/Extreme
-format, such as USBUtil 2.0.
+> NOTE: partial file fragmentation is supported (up to 64 fragments!) since OPL v1.2.0 - rev1893
+
 
 </p>
 </details>
@@ -100,9 +98,7 @@ format, such as USBUtil 2.0.
 For loading games by SMB protocol, you need to share a folder (ex: PS2SMB)
 on the host machine or NAS device and make sure that it has full read and
 write permissions. USB Advance/Extreme format is optional - \*.ISO images
-are supported using the folder structure above with the bonus that
-DVD9 images don't have to be split if your SMB device uses the NTFS or
-EXT3/4 file system.
+are supported using the folder structure above.
 
 </p>
 </details>
@@ -123,24 +119,30 @@ that contains the preferred partition name (for example `__common`).
   <summary> <b> NBD Server </b> </summary>
 <p>
 
-A [NBD](https://en.wikipedia.org/wiki/Network_block_device) server replaced HDL server.
-NBD is [formally documented](https://github.com/NetworkBlockDevice/nbd/blob/master/doc/proto.md)
-and developed as a collaborative open standard.
-The current implementation of the server is based on [lwNBD](https://github.com/bignaux/lwNBD),
-go there to contribute.
-The main advantage of using NBD is that the client will simulate a similar
-interface to the OS as if the device was plugged directly into your machine.
-All your favorite software that worked with the device directly connected to your
-machine, will work with the device accessible through the network.
+OPL now uses an [NBD](https://en.wikipedia.org/wiki/Network_block_device) server to share the internal hard drive, instead of HDL server.
+NBD is [formally documented](https://github.com/NetworkBlockDevice/nbd/blob/master/doc/proto.md) and developed as a collaborative open standard.
 
-Currently, only export for HDD is supported by the server.
-You can use hdl-dump, pfs-shell, or even directly edit disk in some hex editor.
-Example, how to install HDL game to the HDD:
-Connect with your choosen client, then `hdl_dump inject_dvd ps2/nbd "Test Game" ./TEST.ISO`
-and when you're done, disconnect the client.
+The current implementation of the server is based on [lwNBD](https://github.com/bignaux/lwNBD), go there to contribute on the NBD code itself.
 
-So you need a NBD client.
-Here we list some known compatible clients and how to use them.
+The main advantage of using NBD is that the client will expose the drive to your operating system in a similar way as a directly attached drive.
+This means that any utility that worked with the drive when it was directly attached should work the same way with NBD.
+
+OPL currently only supports exporting (sharing out) the PS2's drive.
+
+You can use `hdl-dump`, `pfs-shell`, or even directly edit the disk in a hex editor.
+
+For example, to use `hdl_dump` to install a game to the HDD:
+
+  * Connect with your choosen client (OS specific)
+  * Run `hdl_dump inject_dvd ps2/nbd "Test Game" ./TEST.ISO`
+  * Disconnect the client.
+
+To use the NBD server in OPL:
+
+  * Grab the latest beta version (OPL 1.1.0 (current stable) has some bugs in the NBD server) - go to the [Releases](https://github.com/ps2homebrew/Open-PS2-Loader/releases) section and grab the one at the top.
+  * Ensure OPL is configured with an IP address (either static or DHCP).
+  * Open the menu and select "Start NBD server". Once it's ready, it should update the screen to say "NBD Server running..."
+  * Now you can connect with any of the following NBD clients.
 
 ### nbd-client
 
@@ -220,6 +222,37 @@ Not supported.
 </details>
 
 <details>
+  <summary> <b> ZSO Format </b> </summary>
+<p>
+
+As of version 1.2.0, compressed ISO files in ZSO format is supported by OPL.
+
+To handle ZSO files, a python script (ziso.py) is included in the pc folder of this repository.
+It requires Python 3 and the LZ4 library:
+
+  ```sh
+pip install lz4
+```
+
+To compress an ISO file to ZSO:
+
+  ```sh
+python ziso.py -c 2 "input.iso" "output.zso"
+```
+
+To decompress a ZSO back to the original ISO:
+
+```sh
+python ziso.py -c 0 "input.zso" "output.iso"
+```
+
+You can copy ZSO files to the same folder as your ISOs and they will be detected by OPL.
+To install onto internal HDD, you can use the latest version of HDL-Dump.
+
+</p>
+</details>
+
+<details>
   <summary> <b> PS3 BC </b> </summary>
 <p>
 
@@ -244,6 +277,27 @@ Open PS2 Loader needs the [**latest PS2SDK**](https://github.com/ps2dev/ps2sdk)
 <p>
 
 Since 05/07/2021 every OPL build dispatched to the release section of this repository will be uploaded to a [mega account](https://mega.nz/folder/Ndwi1bAK#oLWNhH_g-h0p4BoT4c556A). You can access the archive by clicking the mega badge on top of this readme
+
+</p>
+</details>
+
+<details>
+  <summary> <b> Frequent Issues </b> </summary>
+<p>
+
+### OPL Freezes on logo or grey screen
+
+ Sometimes OPL freezes when loading config files made by older OPL builds.
+> hold __`START`__ while OPL initializes to make it skip the config loading, then, you can save your own settings.
+> fixing the issue.
+
+### Game freezes on white screen
+
+> Main game executable could not be found. Either game is fragmented or image is corrupted
+
+### OPL does not display anything on boot
+
+> You may have selected a Video Mode which your TV does not support. Hold Triangle and Cross while OPL initializes to reset your video mode to "Auto".
 
 </p>
 </details>
