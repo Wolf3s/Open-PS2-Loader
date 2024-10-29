@@ -194,6 +194,9 @@ enum UI_ITEMS {
     PADMACRO_TURBO_SPEED,
 
     COMPAT_MODE_BASE = 250,
+#else
+    COMPAT_MODE_BASE = 200,
+#endif
 };
 
 #define COMPAT_NOEXIT       0x70000000
@@ -204,9 +207,11 @@ enum UI_ITEMS {
 #define COMPAT_VMC1_DEFINE (COMPAT_VMC1_DEFINE_ID | COMPAT_NOEXIT)
 #define COMPAT_VMC2_DEFINE (COMPAT_VMC2_DEFINE_ID | COMPAT_NOEXIT)
 
+#ifdef PADEMU
 extern struct UIItem diaPadEmuConfig[];
 extern struct UIItem diaPadMacroConfig[];
 extern struct UIItem diaPadEmuInfo[];
+#endif
 
 extern struct UIItem diaNetConfig[];
 extern struct UIItem diaUIConfig[];
