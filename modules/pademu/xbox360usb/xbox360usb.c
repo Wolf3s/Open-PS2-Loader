@@ -24,7 +24,7 @@ IRX_ID(MODNAME, 1, 1);
 
 
 #define REQ_USB_OUT (USB_DIR_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE)
-#define REQ_USB_IN (USB_DIR_IN | USB_TYPE_CLASS | USB_RECIP_INTERFACE)
+#define REQ_USB_IN  (USB_DIR_IN | USB_TYPE_CLASS | USB_RECIP_INTERFACE)
 
 #define MAX_PADS 4
 
@@ -48,11 +48,11 @@ int usb_probe(int devId)
 {
     UsbDeviceDescriptor *device = NULL;
 
-   DPRINTF("probe: devId=%i\n", devId);
+    DPRINTF("probe: devId=%i\n", devId);
 
     device = (UsbDeviceDescriptor *)UsbGetDeviceStaticDescriptor(devId, NULL, USB_DT_DEVICE);
     if (device == NULL) {
-       DPRINTF("Error - Couldn't get device descriptor\n");
+        DPRINTF("Error - Couldn't get device descriptor\n");
         return 0;
     }
 
@@ -72,7 +72,7 @@ int usb_connect(int devId)
     UsbInterfaceDescriptor *interface;
     UsbEndpointDescriptor *endpoint;
 
-   DPRINTF("connect: devId=%i\n", devId);
+    DPRINTF("connect: devId=%i\n", devId);
 
     for (pad = 0; pad < MAX_PADS; pad++) {
         if (xbox360dev[pad].usb_id == -1)
@@ -80,7 +80,7 @@ int usb_connect(int devId)
     }
 
     if (pad >= MAX_PADS) {
-       DPRINTF("Error - only %d device allowed !\n", MAX_PADS);
+        DPRINTF("Error - only %d device allowed !\n", MAX_PADS);
         return 1;
     }
 
@@ -100,7 +100,7 @@ int usb_connect(int devId)
         if (endpoint->bmAttributes == USB_ENDPOINT_XFER_INT) {
             if ((endpoint->bEndpointAddress & USB_ENDPOINT_DIR_MASK) == USB_DIR_IN && xbox360dev[pad].interruptEndp < 0) {
                 xbox360dev[pad].interruptEndp = UsbOpenEndpointAligned(devId, endpoint);
-               DPRINTF("register Event endpoint id =%i addr=%02X packetSize=%i\n", xbox360dev[pad].interruptEndp, endpoint->bEndpointAddress, (unsigned short int)endpoint->wMaxPacketSizeHB << 8 | endpoint->wMaxPacketSizeLB);
+                DPRINTF("register Event endpoint id =%i addr=%02X packetSize=%i\n", xbox360dev[pad].interruptEndp, endpoint->bEndpointAddress, (unsigned short int)endpoint->wMaxPacketSizeHB << 8 | endpoint->wMaxPacketSizeLB);
             }
         }
 
@@ -123,7 +123,7 @@ int usb_disconnect(int devId)
 {
     u8 pad;
 
-   DPRINTF("disconnect: devId=%i\n", devId);
+    DPRINTF("disconnect: devId=%i\n", devId);
 
     for (pad = 0; pad < MAX_PADS; pad++) {
         if (xbox360dev[pad].usb_id == devId) {
@@ -156,7 +156,7 @@ static void usb_data_cb(int resultCode, int bytes, void *arg)
 {
     int pad = (int)arg;
 
-    //DPRINTF("XBOX360USB: usb_data_cb: res %d, bytes %d, arg %p \n", resultCode, bytes, arg);
+    // DPRINTF("XBOX360USB: usb_data_cb: res %d, bytes %d, arg %p \n", resultCode, bytes, arg);
 
     xbox360dev[pad].usb_resultcode = resultCode;
 
@@ -167,7 +167,7 @@ static void usb_cmd_cb(int resultCode, int bytes, void *arg)
 {
     int pad = (int)arg;
 
-    //DPRINTF("XBOX360USB: usb_cmd_cb: res %d, bytes %d, arg %p \n", resultCode, bytes, arg);
+    // DPRINTF("XBOX360USB: usb_cmd_cb: res %d, bytes %d, arg %p \n", resultCode, bytes, arg);
 
     SignalSema(xbox360dev[pad].cmd_sema);
 }
@@ -197,42 +197,42 @@ static void readReport(u8 *data, int pad)
         xbox360dev[pad].data[0] = ~(report->Back | report->LS << 1 | report->RS << 2 | report->Start << 3 | report->Up << 4 | report->Right << 5 | report->Down << 6 | report->Left << 7);
         xbox360dev[pad].data[1] = ~((report->LeftTrigger != 0) | (report->RightTrigger != 0) << 1 | report->LB << 2 | report->RB << 3 | report->Y << 4 | report->B << 5 | report->A << 6 | report->X << 7);
 
-        xbox360dev[pad].data[2] = report->RightStickXH + 128;    //rx
-        xbox360dev[pad].data[3] = ~(report->RightStickYH + 128); //ry
-        xbox360dev[pad].data[4] = report->LeftStickXH + 128;     //lx
-        xbox360dev[pad].data[5] = ~(report->LeftStickYH + 128);  //ly
+        xbox360dev[pad].data[2] = report->RightStickXH + 128;    // rx
+        xbox360dev[pad].data[3] = ~(report->RightStickYH + 128); // ry
+        xbox360dev[pad].data[4] = report->LeftStickXH + 128;     // lx
+        xbox360dev[pad].data[5] = ~(report->LeftStickYH + 128);  // ly
 
-        xbox360dev[pad].data[6] = report->Right * 255; //right
-        xbox360dev[pad].data[7] = report->Left * 255;  //left
-        xbox360dev[pad].data[8] = report->Up * 255;    //up
-        xbox360dev[pad].data[9] = report->Down * 255;  //down
+        xbox360dev[pad].data[6] = report->Right * 255; // right
+        xbox360dev[pad].data[7] = report->Left * 255;  // left
+        xbox360dev[pad].data[8] = report->Up * 255;    // up
+        xbox360dev[pad].data[9] = report->Down * 255;  // down
 
-        xbox360dev[pad].data[10] = report->Y * 255; //triangle
-        xbox360dev[pad].data[11] = report->B * 255; //circle
-        xbox360dev[pad].data[12] = report->A * 255; //cross
-        xbox360dev[pad].data[13] = report->X * 255; //square
+        xbox360dev[pad].data[10] = report->Y * 255; // triangle
+        xbox360dev[pad].data[11] = report->B * 255; // circle
+        xbox360dev[pad].data[12] = report->A * 255; // cross
+        xbox360dev[pad].data[13] = report->X * 255; // square
 
-        xbox360dev[pad].data[14] = report->LB * 255;     //L1
-        xbox360dev[pad].data[15] = report->RB * 255;     //R1
-        xbox360dev[pad].data[16] = report->LeftTrigger;  //L2
-        xbox360dev[pad].data[17] = report->RightTrigger; //R2
+        xbox360dev[pad].data[14] = report->LB * 255;     // L1
+        xbox360dev[pad].data[15] = report->RB * 255;     // R1
+        xbox360dev[pad].data[16] = report->LeftTrigger;  // L2
+        xbox360dev[pad].data[17] = report->RightTrigger; // R2
 
-        if (report->XBOX) {                                                 //display battery level
-            if (report->Back && (xbox360dev[pad].btn_delay == MAX_DELAY)) { //XBOX + BACK
-                if (xbox360dev[pad].analog_btn < 2)                         //unlocked mode
+        if (report->XBOX) {                                                 // display battery level
+            if (report->Back && (xbox360dev[pad].btn_delay == MAX_DELAY)) { // XBOX + BACK
+                if (xbox360dev[pad].analog_btn < 2)                         // unlocked mode
                     xbox360dev[pad].analog_btn = !xbox360dev[pad].analog_btn;
 
-                //xbox360dev[pad].oldled[0] = led_patterns[pad][(xbox360dev[pad].analog_btn & 1)];
+                // xbox360dev[pad].oldled[0] = led_patterns[pad][(xbox360dev[pad].analog_btn & 1)];
                 xbox360dev[pad].btn_delay = 1;
             } else {
-                //if (report->Power != 0xEE)
-                //    xbox360dev[pad].oldled[0] = power_level[report->Power];
+                // if (report->Power != 0xEE)
+                //     xbox360dev[pad].oldled[0] = power_level[report->Power];
 
                 if (xbox360dev[pad].btn_delay < MAX_DELAY)
                     xbox360dev[pad].btn_delay++;
             }
         } else {
-            //xbox360dev[pad].oldled[0] = led_patterns[pad][(xbox360dev[pad].analog_btn & 1)];
+            // xbox360dev[pad].oldled[0] = led_patterns[pad][(xbox360dev[pad].analog_btn & 1)];
 
             if (xbox360dev[pad].btn_delay > 0)
                 xbox360dev[pad].btn_delay--;
@@ -316,7 +316,7 @@ int xbox360usb_get_data(u8 *dst, int size, int port)
 
         xbox360dev[port].usb_resultcode = 1;
     } else {
-       DPRINTF("XBOX360USB_get_data usb transfer error %d\n", ret);
+        DPRINTF("XBOX360USB_get_data usb transfer error %d\n", ret);
     }
 
     mips_memcpy(dst, xbox360dev[port].data, size);
@@ -327,7 +327,7 @@ int xbox360usb_get_data(u8 *dst, int size, int port)
         if (ret == USB_RC_OK)
             TransferWait(xbox360dev[port].cmd_sema);
         else
-           DPRINTF("LEDRumble usb transfer error %d\n", ret);
+            DPRINTF("LEDRumble usb transfer error %d\n", ret);
 
         xbox360dev[port].update_rum = 0;
     }
@@ -386,13 +386,13 @@ int _start(int argc, char *argv[])
         xbox360dev[pad].cmd_sema = CreateMutex(IOP_MUTEX_UNLOCKED);
 
         if (xbox360dev[pad].sema < 0 || xbox360dev[pad].cmd_sema < 0) {
-           DPRINTF("Failed to allocate I/O semaphore.\n");
+            DPRINTF("Failed to allocate I/O semaphore.\n");
             return MODULE_NO_RESIDENT_END;
         }
     }
 
     if (UsbRegisterDriver(&usb_driver) != USB_RC_OK) {
-       DPRINTF("Error registering USB devices\n");
+        DPRINTF("Error registering USB devices\n");
         return MODULE_NO_RESIDENT_END;
     }
 

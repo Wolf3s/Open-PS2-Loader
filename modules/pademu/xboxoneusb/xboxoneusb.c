@@ -24,7 +24,7 @@ IRX_ID(MODNAME, 1, 1);
 
 
 #define REQ_USB_OUT (USB_DIR_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE)
-#define REQ_USB_IN (USB_DIR_IN | USB_TYPE_CLASS | USB_RECIP_INTERFACE)
+#define REQ_USB_IN  (USB_DIR_IN | USB_TYPE_CLASS | USB_RECIP_INTERFACE)
 
 #define MAX_PADS 4
 
@@ -168,7 +168,7 @@ static void usb_data_cb(int resultCode, int bytes, void *arg)
 {
     int pad = (int)arg;
 
-    //DPRINTF("usb_data_cb: res %d, bytes %d, arg %p \n", resultCode, bytes, arg);
+    // DPRINTF("usb_data_cb: res %d, bytes %d, arg %p \n", resultCode, bytes, arg);
 
     xboxonedev[pad].usb_resultcode = resultCode;
 
@@ -179,7 +179,7 @@ static void usb_cmd_cb(int resultCode, int bytes, void *arg)
 {
     int pad = (int)arg;
 
-    //DPRINTF("usb_cmd_cb: res %d, bytes %d, arg %p \n", resultCode, bytes, arg);
+    // DPRINTF("usb_cmd_cb: res %d, bytes %d, arg %p \n", resultCode, bytes, arg);
 
     SignalSema(xboxonedev[pad].cmd_sema);
 }
@@ -213,25 +213,25 @@ static void readReport(u8 *data, int pad)
         xboxonedev[pad].data[0] = ~(report->Back | report->LS << 1 | report->RS << 2 | report->Start << 3 | report->Up << 4 | report->Right << 5 | report->Down << 6 | report->Left << 7);
         xboxonedev[pad].data[1] = ~((report->LeftTriggerH != 0) | (report->RightTriggerH != 0) << 1 | report->LB << 2 | report->RB << 3 | report->Y << 4 | report->B << 5 | report->A << 6 | report->X << 7);
 
-        xboxonedev[pad].data[2] = report->RightStickXH + 128;    //rx
-        xboxonedev[pad].data[3] = ~(report->RightStickYH + 128); //ry
-        xboxonedev[pad].data[4] = report->LeftStickXH + 128;     //lx
-        xboxonedev[pad].data[5] = ~(report->LeftStickYH + 128);  //ly
+        xboxonedev[pad].data[2] = report->RightStickXH + 128;    // rx
+        xboxonedev[pad].data[3] = ~(report->RightStickYH + 128); // ry
+        xboxonedev[pad].data[4] = report->LeftStickXH + 128;     // lx
+        xboxonedev[pad].data[5] = ~(report->LeftStickYH + 128);  // ly
 
-        xboxonedev[pad].data[6] = report->Right * 255; //right
-        xboxonedev[pad].data[7] = report->Left * 255;  //left
-        xboxonedev[pad].data[8] = report->Up * 255;    //up
-        xboxonedev[pad].data[9] = report->Down * 255;  //down
+        xboxonedev[pad].data[6] = report->Right * 255; // right
+        xboxonedev[pad].data[7] = report->Left * 255;  // left
+        xboxonedev[pad].data[8] = report->Up * 255;    // up
+        xboxonedev[pad].data[9] = report->Down * 255;  // down
 
-        xboxonedev[pad].data[10] = report->Y * 255; //triangle
-        xboxonedev[pad].data[11] = report->B * 255; //circle
-        xboxonedev[pad].data[12] = report->A * 255; //cross
-        xboxonedev[pad].data[13] = report->X * 255; //square
+        xboxonedev[pad].data[10] = report->Y * 255; // triangle
+        xboxonedev[pad].data[11] = report->B * 255; // circle
+        xboxonedev[pad].data[12] = report->A * 255; // cross
+        xboxonedev[pad].data[13] = report->X * 255; // square
 
-        xboxonedev[pad].data[14] = report->LB * 255;      //L1
-        xboxonedev[pad].data[15] = report->RB * 255;      //R1
-        xboxonedev[pad].data[16] = report->LeftTriggerH;  //L2
-        xboxonedev[pad].data[17] = report->RightTriggerH; //R2
+        xboxonedev[pad].data[14] = report->LB * 255;      // L1
+        xboxonedev[pad].data[15] = report->RB * 255;      // R1
+        xboxonedev[pad].data[16] = report->LeftTriggerH;  // L2
+        xboxonedev[pad].data[17] = report->RightTriggerH; // R2
     }
 }
 

@@ -243,18 +243,18 @@ static u8 GenuineMacAddress[][3] =
         {0x00, 0x24, 0x23},
         {0x00, 0x22, 0x43},
         {0x00, 0x15, 0xAF},
-        //fake with AirohaTechnologyCorp's Chip
+        // fake with AirohaTechnologyCorp's Chip
         {0x0C, 0xFC, 0x83}};
 
-static u8 link_key[] = //for ds4 authorisation
+static u8 link_key[] = // for ds4 authorisation
     {
         0x56, 0xE8, 0x81, 0x38, 0x08, 0x06, 0x51, 0x41,
         0xC0, 0x7F, 0x12, 0xAA, 0xD9, 0x66, 0x3C, 0xCE};
 
-#define REQ_HCI_OUT (USB_DIR_OUT | USB_TYPE_CLASS | USB_RECIP_DEVICE)
+#define REQ_HCI_OUT     (USB_DIR_OUT | USB_TYPE_CLASS | USB_RECIP_DEVICE)
 #define HCI_COMMAND_REQ 0
 
-#define MAX_PADS 4
+#define MAX_PADS  4
 #define MAX_DELAY 10
 
 static u8 hci_buf[MAX_BUFFER_SIZE] __attribute((aligned(4))) = {0};
@@ -325,7 +325,7 @@ static int hci_accept_connection(u8 *bdaddr)
     hci_cmd_buf[6] = *(bdaddr + 3);
     hci_cmd_buf[7] = *(bdaddr + 4);
     hci_cmd_buf[8] = *(bdaddr + 5);
-    hci_cmd_buf[9] = 0x01; //switch role to (slave = 1 / master = 0)
+    hci_cmd_buf[9] = 0x01; // switch role to (slave = 1 / master = 0)
 
     return HCI_Command(10, hci_cmd_buf);
 }
@@ -360,7 +360,7 @@ static int hci_reject_connection(u8 *bdaddr)
     hci_cmd_buf[6] = *(bdaddr + 3);
     hci_cmd_buf[7] = *(bdaddr + 4);
     hci_cmd_buf[8] = *(bdaddr + 5);
-    hci_cmd_buf[9] = 0x09; //reason max connection
+    hci_cmd_buf[9] = 0x09; // reason max connection
 
     return HCI_Command(10, hci_cmd_buf);
 }
@@ -488,7 +488,7 @@ static void HCI_event_task(int result)
                 DPRINTF("\t Status = 0x%02X \n", hci_buf[2]);
                 DPRINTF("\t Connection_Handle = 0x%04X \n", (hci_buf[3] | ((hci_buf[4] & 0x0F) << 8)));
                 DPRINTF("\t Reason = 0x%02X \n", hci_buf[5]);
-                for (i = 0; i < MAX_PADS; i++) { //detect pad
+                for (i = 0; i < MAX_PADS; i++) { // detect pad
                     if (dev[i].hci_handle == (hci_buf[3] | ((hci_buf[4] & 0x0F) << 8))) {
                         break;
                     }
@@ -556,18 +556,18 @@ static void HCI_event_task(int result)
                 }
                 DPRINTF("\n\t Link = 0x%02X \n", hci_buf[11]);
                 DPRINTF("\t Class = 0x%02X 0x%02X 0x%02X \n", hci_buf[8], hci_buf[9], hci_buf[10]);
-                for (i = 0; i < MAX_PADS; i++) { //find free slot
+                for (i = 0; i < MAX_PADS; i++) { // find free slot
                     if (dev[i].pad == NULL && !btdev_status_check(BTDEV_STATE_RUNNING, i)) {
                         if (btdev_status_check(BTDEV_STATE_CONNECTED, i)) {
-                            if (btdev_status_check(BTDEV_STATE_DISCONNECTING, i)) //if we're waiting for hci disconnect event
+                            if (btdev_status_check(BTDEV_STATE_DISCONNECTING, i)) // if we're waiting for hci disconnect event
                                 continue;
                             else
-                                hci_disconnect(dev[i].hci_handle); //try to disconnect
+                                hci_disconnect(dev[i].hci_handle); // try to disconnect
                         }
                         break;
                     }
                 }
-                if (i == MAX_PADS) { //no free slot
+                if (i == MAX_PADS) { // no free slot
                     DPRINTF("\t No free slot! \n");
                     hci_reject_connection(hci_buf + 2);
                     break;
@@ -575,7 +575,7 @@ static void HCI_event_task(int result)
                 pad = i;
                 mips_memcpy(dev[pad].bdaddr, hci_buf + 2, 6);
                 dev[pad].data.fix = 1;
-                for (i = 0; i < sizeof(GenuineMacAddress) / 3; i++) { //check if ds3 is genuine
+                for (i = 0; i < sizeof(GenuineMacAddress) / 3; i++) { // check if ds3 is genuine
                     if (dev[pad].bdaddr[5] == GenuineMacAddress[i][0] &&
                         dev[pad].bdaddr[4] == GenuineMacAddress[i][1] &&
                         dev[pad].bdaddr[3] == GenuineMacAddress[i][2]) {
@@ -737,10 +737,10 @@ static int l2cap_config_request(u16 handle, u8 rxid, u16 dcid)
     cmd_buf[7] = 0x00;
     cmd_buf[8] = 0x01; // Config Opt: type = MTU (Maximum Transmission Unit)
     cmd_buf[9] = 0x02; // Config Opt: length
-    //cmd_buf[10] = 0x96; // Config Opt: data
-    //cmd_buf[11] = 0x00;
+    // cmd_buf[10] = 0x96; // Config Opt: data
+    // cmd_buf[11] = 0x00;
 
-    //this setting disable hid cmd reports from ds3
+    // this setting disable hid cmd reports from ds3
     cmd_buf[10] = 0xFF; // Config Opt: data
     cmd_buf[11] = 0xFF;
 
@@ -968,7 +968,7 @@ static void l2cap_event_cb(int resultCode, int bytes, void *arg)
             }
         } else {
             if (!dev[ret].data.fix) {
-                DelayThread(42000); //fix for some bt adapters
+                DelayThread(42000); // fix for some bt adapters
             }
         }
     }
@@ -1045,7 +1045,7 @@ int btpad_get_data(u8 *dst, int size, int port)
 
     WaitSema(bt_adp.hid_sema);
 
-    //DPRINTF("Get data\n");
+    // DPRINTF("Get data\n");
     mips_memcpy(dst, dev[port].data.data, size);
     ret = dev[port].data.analog_btn & 1;
 
@@ -1058,7 +1058,7 @@ void btpad_set_rumble(u8 lrum, u8 rrum, int port)
 {
     WaitSema(bt_adp.hid_sema);
 
-    //DPRINTF("Rumble\n");
+    // DPRINTF("Rumble\n");
     dev[port].data.update_rum = 1;
     dev[port].data.lrum = lrum;
     dev[port].data.rrum = rrum;
@@ -1070,7 +1070,7 @@ void btpad_set_mode(int mode, int lock, int port)
 {
     WaitSema(bt_adp.hid_sema);
 
-    //DPRINTF("Set mode\n");
+    // DPRINTF("Set mode\n");
     if (lock == 3)
         dev[port].data.analog_btn = 3;
     else

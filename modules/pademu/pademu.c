@@ -54,7 +54,7 @@ typedef struct
 #define ANALOG_MODE  0x73
 #define ANALOGP_MODE 0x79
 #define CONFIG_MODE  0xF3
-#define MAX_PORTS 4
+#define MAX_PORTS    4
 
 PtrRegisterLibraryEntires pRegisterLibraryEntires; /* Pointer to RegisterLibraryEntires routine */
 Sio2McProc pSio2man25, pSio2man51;                 /* Pointers to SIO2MAN routines */
@@ -412,7 +412,7 @@ void pademu_cmd(int port, u8 *in, u8 *out, u8 out_size)
 {
     u8 i;
 
-    //DPRINTF("sio cmd %02x port %d\n", in[1], port);
+    // DPRINTF("sio cmd %02x port %d\n", in[1], port);
 
     mips_memset(out, 0x00, out_size);
 
@@ -453,7 +453,7 @@ void pademu_cmd(int port, u8 *in, u8 *out, u8 out_size)
             if (in[1] == 0x42) {
                 if (pad[port].vibration) { // disable/enable vibration
                     pad[port].dev->pad_set_rumble(in[pad[port].lrum], in[pad[port].rrum], pad[port].dev->id);
-                    //PAD_SET_RUMBLE(in[pad[port].lrum], in[pad[port].rrum], port);
+                    // PAD_SET_RUMBLE(in[pad[port].lrum], in[pad[port].rrum], port);
                 }
             }
 

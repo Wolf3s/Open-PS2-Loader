@@ -41,13 +41,13 @@ typedef struct
         struct
         {
             u8 Select : 1;
-            u8 L3 : 1;
-            u8 R3 : 1;
-            u8 Start : 1;
-            u8 Up : 1;
-            u8 Right : 1;
-            u8 Down : 1;
-            u8 Left : 1;
+            u8 L3     : 1;
+            u8 R3     : 1;
+            u8 Start  : 1;
+            u8 Up     : 1;
+            u8 Right  : 1;
+            u8 Down   : 1;
+            u8 Left   : 1;
         };
     };
     union
@@ -55,14 +55,14 @@ typedef struct
         u8 ButtonStateH; // Main buttons High
         struct
         {
-            u8 L2 : 1;
-            u8 R2 : 1;
-            u8 L1 : 1;
-            u8 R1 : 1;
+            u8 L2       : 1;
+            u8 R2       : 1;
+            u8 L1       : 1;
+            u8 R1       : 1;
             u8 Triangle : 1;
-            u8 Circle : 1;
-            u8 Cross : 1;
-            u8 Square : 1;
+            u8 Circle   : 1;
+            u8 Cross    : 1;
+            u8 Square   : 1;
         };
     };
     u8 PSButtonState;    // PS button
