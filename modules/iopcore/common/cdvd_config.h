@@ -44,7 +44,7 @@ struct cdvdman_settings_hdd
 struct cdvdman_settings_smb
 {
     struct cdvdman_settings_common common;
-    char filename[88];
+    char filename[160];
     union
     {
         struct
@@ -77,6 +77,9 @@ struct cdvdman_settings_bdm
     // Fragmented files:
     // 0 = ISO
     struct cdvdman_fragfile fragfile[BDM_MAX_FILES];
+
+    // Device ID of the block device to bind to.
+    u32 bdDeviceId;
 
     // Fragment table, containing the fragments of all files
     bd_fragment_t frags[BDM_MAX_FRAGS];

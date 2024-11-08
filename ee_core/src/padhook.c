@@ -34,6 +34,7 @@
 #endif
 #include "cheat_api.h"
 #include "cd_igr_rpc.h"
+#include "coreconfig.h"
 
 /* scePadPortOpen & scePad2CreateSocket prototypes */
 static int (*scePadPortOpen)(int port, int slot, void *addr);
@@ -60,30 +61,31 @@ extern void *_end;
 // Load home ELF
 static void t_loadElf(void)
 {
+    USE_LOCAL_EECORE_CONFIG;
     int ret;
     char *argv[2];
     t_ExecData elf;
 
     if (EnableDebug)
-        GS_BGCOLOUR = 0x80FF00; // Blue Green
+        DBGCOL(0x80FF00, LOADELF, "t_loadElf() begins");
 
     // Init RPC & CMD
     SifInitRpc(0);
 
     if (EnableDebug)
-        GS_BGCOLOUR = 0x000080; // Dark Red
+        DBGCOL(0x000080, LOADELF, "Patch prefix check");
 
     // Apply Sbv patches
     sbv_patch_disable_prefix_check();
 
     if (EnableDebug)
-        GS_BGCOLOUR = 0xFF8000; // Blue sky
+        DBGCOL(0xFF8000, LOADELF, "loading SIO2 modules and USBD if found");
 
     // Load basic modules
     LoadModule("rom0:SIO2MAN", 0, NULL);
     LoadModule("rom0:MCMAN", 0, NULL);
 
-    if (ExitPath[1] == 'a') { // ie mass:
+    if (config->ExitPath[1] == 'a') { // ie mass:
         ret = LoadModule("mc0:SYS-CONF/USBD.IRX", 0, NULL);
         if (ret >= 0)
             LoadModule("mc0:SYS-CONF/USBHDFSD.IRX", 0, NULL);
@@ -95,7 +97,7 @@ static void t_loadElf(void)
     }
 
     // Load exit ELF
-    argv[0] = ExitPath;
+    argv[0] = config->ExitPath;
     argv[1] = NULL;
 
     // Wipe everything, even the module storage.
@@ -116,14 +118,14 @@ static void t_loadElf(void)
         FlushCache(2);
 
         if (EnableDebug)
-            GS_BGCOLOUR = 0x0080FF; // Orange
+            DBGCOL(0x0080FF, LOADELF, "ExecPS2() begins");
 
         // Execute BOOT.ELF
         ExecPS2((void *)elf.epc, (void *)elf.gp, 1, argv);
     }
 
     if (EnableDebug) {
-        GS_BGCOLOUR = 0x0000FF; // Red
+        DBGCOL(0x0000FF, LOADELF, "LoadElf() error");
         delay(5);
     }
 
@@ -134,6 +136,7 @@ static void t_loadElf(void)
 // In Game Reset Thread
 static void IGR_Thread(void *arg)
 {
+    USE_LOCAL_EECORE_CONFIG;
     u32 Cop0_Perf;
 
     // Place our IGR thread in WAIT state
@@ -143,7 +146,7 @@ static void IGR_Thread(void *arg)
     DPRINTF("IGR thread woken up!\n");
 
     if (EnableDebug)
-        GS_BGCOLOUR = 0xFFFFFF; // White
+        DBGCOL(0xFFFFFF, IGR, "Thread WakeUp");
 
     // Re-Init RPC & CMD
     SifInitRpc(0);
@@ -151,17 +154,17 @@ static void IGR_Thread(void *arg)
     // If Pad Combo is Start + Select then Return to Home, else if Pad Combo is UP then take IGS
     if ((Pad_Data.combo_type == IGR_COMBO_START_SELECT)
 #ifdef IGS
-        || ((Pad_Data.combo_type == IGR_COMBO_UP) && (EnableGSMOp))
+        || ((Pad_Data.combo_type == IGR_COMBO_UP) && (config->EnableGSMOp))
 #endif
     ) {
 
         if (EnableDebug)
-            GS_BGCOLOUR = 0xFF8000; // Blue sky
+            DBGCOL(0xFF8000, IGR, "oplIGRShutdown()");
 
         oplIGRShutdown(0);
 
         if (EnableDebug)
-            GS_BGCOLOUR = 0x0000FF; // Red
+            DBGCOL(0x0000FF, IGR, "Reset IOP");
 
         // Reset IO Processor
         while (!Reset_Iop("", 0)) {
@@ -192,29 +195,29 @@ static void IGR_Thread(void *arg)
                 " sync.p;");
         }
 
-        if (EnableGSMOp) {
+        if (config->EnableGSMOp) {
             if (EnableDebug)
-                GS_BGCOLOUR = 0x00FF00; // Green
+                DBGCOL(0x00FF00, IGR, "Stopping GSM");
             DPRINTF("Stopping GSM...\n");
             DisableGSM();
         }
 
-        if (EnableCheatOp) {
+        if (config->gCheatList) {
             if (EnableDebug)
-                GS_BGCOLOUR = 0xFF0000; // Blue
+                DBGCOL(0xFF0000, IGR, "Stopping CheatEngine");
             DPRINTF("Stopping PS2RD Cheat Engine...\n");
             DisableCheats();
         }
 
         if (EnableDebug)
-            GS_BGCOLOUR = 0x00FFFF; // Yellow
+            DBGCOL(0x00FFFF, IGR, "Waiting for IOP Reboot");
 
         while (!SifIopSync()) {
             ;
         }
 
         if (EnableDebug)
-            GS_BGCOLOUR = 0xFF80FF; // Pink
+            DBGCOL(0xFF80FF, IGR, "Initializing RPC and services");
 
         // Init RPC & CMD
         SifInitRpc(0);
@@ -223,18 +226,18 @@ static void IGR_Thread(void *arg)
         sbv_patch_enable_lmb();
 
         if (EnableDebug)
-            GS_BGCOLOUR = 0x800000; // Dark Blue
+            DBGCOL(0x800000, IGR, "Execute RESETSPU.IRX");
 
         // Reset SPU - do it after the IOP reboot, so nothing will compete with the EE for it.
         LoadOPLModule(OPL_MODULE_ID_RESETSPU, 0, 0, NULL);
 
 #ifdef IGS
-        if ((Pad_Data.combo_type == IGR_COMBO_UP) && (EnableGSMOp))
+        if ((Pad_Data.combo_type == IGR_COMBO_UP) && (config->EnableGSMOp))
             InGameScreenshot();
 #endif
 
         if (EnableDebug)
-            GS_BGCOLOUR = 0x008000; // Dark Green
+            DBGCOL(0x008000, IGR, "Exiting services");
 
         // Exit services
         SifExitIopHeap();
@@ -244,7 +247,7 @@ static void IGR_Thread(void *arg)
         IGR_Exit(0);
     } else {
         if (EnableDebug)
-            GS_BGCOLOUR = 0x0000FF; // Red
+            DBGCOL(0x0000FF, IGR, "oplIGRShutdown(1)");
 
         // If combo is R3 + L3, Poweroff PS2
         oplIGRShutdown(1);
@@ -253,8 +256,9 @@ static void IGR_Thread(void *arg)
 
 void IGR_Exit(s32 exit_code)
 {
+    USE_LOCAL_EECORE_CONFIG;
     // Execute home loader
-    if (ExitPath[0] != '\0')
+    if (config->ExitPath[0] != '\0')
         ExecPS2(t_loadElf, &_gp, 0, NULL);
 
     // Return to PS2 Browser
@@ -264,6 +268,7 @@ void IGR_Exit(s32 exit_code)
 // IGR VBLANK_END interrupt handler install to monitor combo trick in pad data aera
 static int IGR_Intc_Handler(int cause)
 {
+    USE_LOCAL_EECORE_CONFIG;
     int i;
     u8 pad_pos_state, pad_pos_frame, pad_pos_combo1, pad_pos_combo2;
 
@@ -295,7 +300,7 @@ static int IGR_Intc_Handler(int cause)
                 if ((pad_pos_combo2 == IGR_COMBO_START_SELECT) || // Start + Select combo, so reset
                     (pad_pos_combo2 == IGR_COMBO_R3_L3)           // R3 + L3 combo, so poweroff
 #ifdef IGS
-                    || ((pad_pos_combo2 == IGR_COMBO_UP) && (EnableGSMOp)) // UP combo, so take IGS
+                    || ((pad_pos_combo2 == IGR_COMBO_UP) && (config->EnableGSMOp)) // UP combo, so take IGS
 #endif
                 )
 
@@ -529,7 +534,7 @@ int Install_PadOpen_Hook(u32 mem_start, u32 mem_end, int mode)
         while (ptr) {
             // Purple while PadOpen pattern search
             if (EnableDebug)
-                GS_BGCOLOUR = 0x800080; // Purple
+                DBGCOL(0x800080, PADHOOK, "Searching PadOpen() pattern");
 
             mem_size = mem_end - (u32)ptr;
 
@@ -541,7 +546,7 @@ int Install_PadOpen_Hook(u32 mem_start, u32 mem_end, int mode)
 
                 // Green while PadOpen patches
                 if (EnableDebug)
-                    GS_BGCOLOUR = 0x008000; // Dark green
+                    DBGCOL(0x008000, PADHOOK, "Patching PadOpen()");
 
                 // Save original PadOpen function
                 if (padopen_patterns[i].type == IGR_LIBPAD)
@@ -656,7 +661,7 @@ int Install_PadOpen_Hook(u32 mem_start, u32 mem_end, int mode)
 
     // Done
     if (EnableDebug)
-        GS_BGCOLOUR = 0x000000; // Black
+        BGCOLND(0x000000); // Black
 
     return patched;
 }

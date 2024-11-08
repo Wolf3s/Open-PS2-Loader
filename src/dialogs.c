@@ -807,6 +807,7 @@ struct UIItem diaPadMacroConfig[] = {
     {UI_SPACER},
     {UI_ENUM, PADMACRO_CFG_SOURCE, 1, 1, -1, 0, 0, {.intvalue = {0, 0}}},
     {UI_BREAK},
+    {UI_BREAK},
 
     {UI_LABEL, 0, 1, 1, -1, 0, 0, {.label = {NULL, _STR_PADMACRO_SLOWDOWN}}},
     {UI_BREAK},
@@ -820,6 +821,7 @@ struct UIItem diaPadMacroConfig[] = {
     {UI_SPACER},
     {UI_ENUM, PADMACRO_SLOWDOWN_TOGGLE_R, 1, 1, -1, -40, 0, {.intvalue = {0, 0}}},
     {UI_BREAK},
+    {UI_BREAK},
 
     {UI_LABEL, 0, 1, 1, -1, 0, 0, {.label = {NULL, _STR_PADMACRO_INVERT_AXIS}}},
     {UI_BREAK},
@@ -832,14 +834,15 @@ struct UIItem diaPadMacroConfig[] = {
     {UI_LABEL, 0, 1, 1, -1, -10, 0, {.label = {"LY:", -1}}},
     {UI_BOOL, PADMACRO_INVERT_RY, 1, 1, _STR_HINT_PADMACRO_INVERT_AXIS, -10, 0, {.intvalue = {0, 0}}},
     {UI_BREAK},
+    {UI_BREAK},
 
     {UI_LABEL, 0, 1, 1, -1, -20, 0, {.label = {NULL, _STR_TURBO_SPEED}}},
     {UI_SPACER},
     {UI_INT, PADMACRO_TURBO_SPEED, 1, 1, _STR_HINT_TURBO_SPEED, -10, 0, {.intvalue = {4, 3, 1, 4}}},
     {UI_BREAK},
 
-
     {UI_OK, 0, 1, 1, -1, 0, 0, {.label = {NULL, _STR_OK}}},
+    {UI_BREAK},
 
     // end of dialog
     {UI_TERMINATOR}};
@@ -863,7 +866,7 @@ struct UIItem diaAbout[] = {
     {UI_BREAK},
 
     {UI_SPACER},
-    {UI_LABEL, 0, 1, 1, -1, 0, 15, {.label = {"Maximus32 - misfire - Polo35 - reprep - SP193 - volca", -1}}},
+    {UI_LABEL, 0, 1, 1, -1, 0, 15, {.label = {"kr_ps2 - Maximus32 - misfire - Polo35 - reprep - SP193 - volca", -1}}},
     {UI_BREAK},
 
     {UI_SPACER},
@@ -1017,6 +1020,17 @@ struct UIItem diaControllerConfig[] = {
     {UI_SPACER},
     {UI_ENUM, CFG_SELECTBUTTON, 1, 1, -1, 0, 0, {.intvalue = {0, 0}}},
     {UI_BREAK},
+
+    {UI_BREAK},
+    {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_XSENSITIVITY}}},
+    {UI_SPACER},
+    {UI_ENUM, CFG_XSENSITIVITY, 1, 1, -1, 0, 0, {.intvalue = {0, 0}}},
+    {UI_BREAK},
+
+    {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_YSENSITIVITY}}},
+    {UI_SPACER},
+    {UI_ENUM, CFG_YSENSITIVITY, 1, 1, -1, 0, 0, {.intvalue = {0, 0}}},
+    {UI_BREAK},
 #ifdef PADEMU
     {UI_BREAK},
     {UI_BUTTON, PADEMU_GLOBAL_BUTTON, 1, 1, -1, 0, 0, {.label = {NULL, _STR_PADEMUCONFIG}}},
@@ -1034,7 +1048,7 @@ struct UIItem diaOSDConfig[] = {
     {UI_LABEL, 0, 1, 1, -1, 0, 0, {.label = {NULL, _STR_OSD_SETTINGS}}},
     {UI_SPLITTER},
 
-    {UI_LABEL, 0, 1, 1, -1, -50, 0, {.label = {NULL, _STR_SETTINGS_SOURCE}}},
+    {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_SETTINGS_SOURCE}}},
     {UI_SPACER},
     {UI_ENUM, OSD_LANGUAGE_SOURCE, 1, 1, -1, 0, 0, {.intvalue = {0, 0}}},
     {UI_BREAK},
@@ -1045,9 +1059,19 @@ struct UIItem diaOSDConfig[] = {
     {UI_BOOL, OSD_LANGUAGE_ENABLE, 1, 1, -1, 0, 0, {.intvalue = {0, 0}}},
     {UI_BREAK},
 
-    {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_OSD_SETTINGS_LNG}}},
+    {UI_LABEL, 0, 1, 1, -1, -41, 0, {.label = {NULL, _STR_OSD_SETTINGS_LNG}}},
     {UI_SPACER},
-    {UI_ENUM, OSD_LANGUAGE_VALUE, 1, 1, -1, 0, 0, {.intvalue = {0, 0}}},
+    {UI_ENUM, OSD_LANGUAGE_VALUE, 1, 1, _STR_HINT_OSD_SETTINGS_LNG, 0, 0, {.intvalue = {0, 0}}},
+    {UI_BREAK},
+
+    {UI_LABEL, 0, 1, 1, -1, -41, 0, {.label = {NULL, _STR_OSD_SETTINGS_TVASPECT}}},
+    {UI_SPACER},
+    {UI_ENUM, OSD_TVASPECT_VALUE, 1, 1, -1, 0, 0, {.intvalue = {0, 0}}},
+    {UI_BREAK},
+
+    {UI_LABEL, 0, 1, 1, -1, -41, 0, {.label = {NULL, _STR_OSD_SETTINGS_VMODE}}},
+    {UI_SPACER},
+    {UI_ENUM, OSD_VMODE_VALUE, 1, 1, -1, 0, 0, {.intvalue = {0, 0}}},
     {UI_BREAK},
 
     // buttons

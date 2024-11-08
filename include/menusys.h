@@ -1,7 +1,6 @@
 #ifndef __MENUSYS_H
 #define __MENUSYS_H
 
-#include <gsToolkit.h>
 #include "include/config.h"
 #include "include/dia.h"
 
@@ -50,6 +49,9 @@ typedef struct menu_item
 
     /// item description in localised form (used if value is not negative)
     int text_id;
+
+    // Indicates if the menu item should be drawn or not.
+    int visible;
 
     void *userdata;
 

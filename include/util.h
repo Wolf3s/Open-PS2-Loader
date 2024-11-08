@@ -1,15 +1,13 @@
 #ifndef __UTIL_H
 #define __UTIL_H
 
-#include <gsToolkit.h>
-
 int getmcID(void);
 int getFileSize(int fd);
 void checkMCFolder(void);
 int openFile(char *path, int mode);
 void *readFile(char *path, int align, int *size);
 int listDir(char *path, const char *separator, int maxElem,
-            int (*readEntry)(int index, const char *path, const char *separator, const char *name, unsigned int mode));
+            int (*readEntry)(int index, const char *path, const char *separator, const char *name, unsigned char d_type));
 
 typedef struct
 {
