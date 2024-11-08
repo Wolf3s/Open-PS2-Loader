@@ -13,10 +13,9 @@
 
 #define MODEL_GUITAR 1
 #define MODEL_PS2    3
-#define SONY_VID     0x054C // Sony Corporation
 #define DS3_PID      0x0268 // PS3 Controller
-#define SONY_VID 0x054C // Sony Corporation
-#define DS3_PID 0x0268  // PS3 Controller
+#define DS3_SONY_VID 0x054C // Sony Corporation(Playstation 3) Controller
+#define DS3_PID      0x0268 // PS3 Controller
 
 #define MAX_BUFFER_SIZE 64 // Size of general purpose data buffer
 
@@ -79,28 +78,31 @@ typedef struct
     union
     {
         u8 ButtonStateL; // Main buttons Low
-        struct {
+        struct
+        {
             u8 Select : 1;
-            u8 L3 : 1;
-            u8 R3 : 1;
-            u8 Start : 1;
-            u8 Up : 1;
-            u8 Right : 1;
-            u8 Down : 1;
-            u8 Left : 1;
+            u8 L3     : 1;
+            u8 R3     : 1;
+            u8 Start  : 1;
+            u8 Up     : 1;
+            u8 Right  : 1;
+            u8 Down   : 1;
+            u8 Left   : 1;
         };
     };
-    union {
-        u8 ButtonStateH;     // Main buttons High
-        struct {
-            u8 L2 : 1;
-            u8 R2 : 1;
-            u8 L1 : 1;
-            u8 R1 : 1;
+    union
+    {
+        u8 ButtonStateH; // Main buttons High
+        struct
+        {
+            u8 L2       : 1;
+            u8 R2       : 1;
+            u8 L1       : 1;
+            u8 R1       : 1;
             u8 Triangle : 1;
-            u8 Circle : 1;
-            u8 Cross : 1;
-            u8 Square : 1;
+            u8 Circle   : 1;
+            u8 Cross    : 1;
+            u8 Square   : 1;
         };
     };
     u8 PSButtonState;    // PS button

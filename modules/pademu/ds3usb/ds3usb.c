@@ -24,7 +24,7 @@ IRX_ID(MODNAME, 1, 1);
 
 
 #define REQ_USB_OUT (USB_DIR_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE)
-#define REQ_USB_IN (USB_DIR_IN | USB_TYPE_CLASS | USB_RECIP_INTERFACE)
+#define REQ_USB_IN  (USB_DIR_IN | USB_TYPE_CLASS | USB_RECIP_INTERFACE)
 
 #define MAX_PADS 4
 
@@ -83,7 +83,7 @@ int usb_probe(int devId)
         return 0;
     }
 
-    if (device->idVendor == SONY_VID && device->idProduct == DS3_PID)
+    if (device->idVendor == DS3_SONY_VID && device->idProduct == DS3_PID)
         return 1;
 
     return 0;
@@ -181,7 +181,7 @@ static void usb_data_cb(int resultCode, int bytes, void *arg)
 {
     int pad = (int)arg;
 
-    //DPRINTF("usb_data_cb: res %d, bytes %d, arg %p \n", resultCode, bytes, arg);
+    // DPRINTF("usb_data_cb: res %d, bytes %d, arg %p \n", resultCode, bytes, arg);
 
     ds3dev[pad].usb_resultcode = resultCode;
 
@@ -192,7 +192,7 @@ static void usb_cmd_cb(int resultCode, int bytes, void *arg)
 {
     int pad = (int)arg;
 
-    //DPRINTF("usb_cmd_cb: res %d, bytes %d, arg %p \n", resultCode, bytes, arg);
+    // DPRINTF("usb_cmd_cb: res %d, bytes %d, arg %p \n", resultCode, bytes, arg);
 
     SignalSema(ds3dev[pad].cmd_sema);
 }
@@ -231,29 +231,29 @@ static void readReport(u8 *data, int pad)
         ds3dev[pad].data[0] = ~report->ButtonStateL;
         ds3dev[pad].data[1] = ~report->ButtonStateH;
 
-        ds3dev[pad].data[2] = report->RightStickX; //rx
-        ds3dev[pad].data[3] = report->RightStickY; //ry
-        ds3dev[pad].data[4] = report->LeftStickX;  //lx
-        ds3dev[pad].data[5] = report->LeftStickY;  //ly
+        ds3dev[pad].data[2] = report->RightStickX; // rx
+        ds3dev[pad].data[3] = report->RightStickY; // ry
+        ds3dev[pad].data[4] = report->LeftStickX;  // lx
+        ds3dev[pad].data[5] = report->LeftStickY;  // ly
 
-        ds3dev[pad].data[6] = report->PressureRight; //right
-        ds3dev[pad].data[7] = report->PressureLeft;  //left
-        ds3dev[pad].data[8] = report->PressureUp;    //up
-        ds3dev[pad].data[9] = report->PressureDown;  //down
+        ds3dev[pad].data[6] = report->PressureRight; // right
+        ds3dev[pad].data[7] = report->PressureLeft;  // left
+        ds3dev[pad].data[8] = report->PressureUp;    // up
+        ds3dev[pad].data[9] = report->PressureDown;  // down
 
-        ds3dev[pad].data[10] = report->PressureTriangle; //triangle
-        ds3dev[pad].data[11] = report->PressureCircle;   //circle
-        ds3dev[pad].data[12] = report->PressureCross;    //cross
-        ds3dev[pad].data[13] = report->PressureSquare;   //square
+        ds3dev[pad].data[10] = report->PressureTriangle; // triangle
+        ds3dev[pad].data[11] = report->PressureCircle;   // circle
+        ds3dev[pad].data[12] = report->PressureCross;    // cross
+        ds3dev[pad].data[13] = report->PressureSquare;   // square
 
-        ds3dev[pad].data[14] = report->PressureL1; //L1
-        ds3dev[pad].data[15] = report->PressureR1; //R1
-        ds3dev[pad].data[16] = report->PressureL2; //L2
-        ds3dev[pad].data[17] = report->PressureR2; //R2
+        ds3dev[pad].data[14] = report->PressureL1; // L1
+        ds3dev[pad].data[15] = report->PressureR1; // R1
+        ds3dev[pad].data[16] = report->PressureL2; // L2
+        ds3dev[pad].data[17] = report->PressureR2; // R2
 
-        if (report->PSButtonState) {                                      //display battery level
-            if (report->Select && (ds3dev[pad].btn_delay == MAX_DELAY)) { //PS + SELECT
-                if (ds3dev[pad].analog_btn < 2)                           //unlocked mode
+        if (report->PSButtonState) {                                      // display battery level
+            if (report->Select && (ds3dev[pad].btn_delay == MAX_DELAY)) { // PS + SELECT
+                if (ds3dev[pad].analog_btn < 2)                           // unlocked mode
                     ds3dev[pad].analog_btn = !ds3dev[pad].analog_btn;
 
                 ds3dev[pad].oldled[0] = led_patterns[pad][(ds3dev[pad].analog_btn & 1)];
@@ -272,7 +272,7 @@ static void readReport(u8 *data, int pad)
                 ds3dev[pad].btn_delay--;
         }
 
-        if (report->Power == 0xEE) //charging
+        if (report->Power == 0xEE) // charging
             ds3dev[pad].oldled[1] = 1;
         else
             ds3dev[pad].oldled[1] = 0;
@@ -290,13 +290,13 @@ static int LEDRumble(u8 *led, u8 lrum, u8 rrum, int pad)
     mips_memset(usb_buf, 0, sizeof(usb_buf));
     mips_memcpy(usb_buf, output_01_report, sizeof(output_01_report));
 
-    usb_buf[1] = 0xFE;          //rt
-    usb_buf[2] = rrum;          //rp
-    usb_buf[3] = 0xFE;          //lt
-    usb_buf[4] = lrum;          //lp
-    usb_buf[9] = led[0] & 0x7F; //LED Conf
+    usb_buf[1] = 0xFE;          // rt
+    usb_buf[2] = rrum;          // rp
+    usb_buf[3] = 0xFE;          // lt
+    usb_buf[4] = lrum;          // lp
+    usb_buf[9] = led[0] & 0x7F; // LED Conf
 
-    if (led[1]) { //means charging, so blink
+    if (led[1]) { // means charging, so blink
         usb_buf[13] = 0x32;
         usb_buf[18] = 0x32;
         usb_buf[23] = 0x32;

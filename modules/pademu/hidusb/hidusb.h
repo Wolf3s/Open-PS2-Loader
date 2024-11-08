@@ -24,13 +24,13 @@ typedef struct
     u8 bCountryCode;
     u8 bNumDescriptors; /* Number of SubDescriptor */
     UsbHidSubDescriptorInfo Sub[0];
-} UsbHidDescriptor;
+} Pademu_UsbHidDescriptor;
 
 typedef struct
 {
     u16 count;
-    u16 size;      //in bits
-    int start_pos; //position in report
+    u16 size;      // in bits
+    int start_pos; // position in report
 } hiddata_t;
 
 typedef struct

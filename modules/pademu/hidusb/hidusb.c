@@ -66,7 +66,7 @@ int usb_connect(int devId)
     UsbConfigDescriptor *config;
     UsbInterfaceDescriptor *interface;
     UsbEndpointDescriptor *endpoint;
-    UsbHidDescriptor *hid;
+    Pademu_UsbHidDescriptor *hid;
     u8 buf[512];
 
     DPRINTF("connect: devId=%i\n", devId);
@@ -90,7 +90,7 @@ int usb_connect(int devId)
     device = (UsbDeviceDescriptor *)UsbGetDeviceStaticDescriptor(devId, NULL, USB_DT_DEVICE);
     config = (UsbConfigDescriptor *)UsbGetDeviceStaticDescriptor(devId, device, USB_DT_CONFIG);
     interface = (UsbInterfaceDescriptor *)((char *)config + config->bLength);
-    hid = (UsbHidDescriptor *)UsbGetDeviceStaticDescriptor(devId, interface, USB_DT_HID);
+    hid = (Pademu_UsbHidDescriptor *)UsbGetDeviceStaticDescriptor(devId, interface, USB_DT_HID);
     epCount = interface->bNumEndpoints - 1;
     endpoint = (UsbEndpointDescriptor *)UsbGetDeviceStaticDescriptor(devId, NULL, USB_DT_ENDPOINT);
 
@@ -166,7 +166,7 @@ static void usb_data_cb(int resultCode, int bytes, void *arg)
 {
     int pad = (int)arg;
 
-    //DPRINTF("DS3USB: usb_data_cb: res %d, bytes %d, arg %p \n", resultCode, bytes, arg);
+    // DPRINTF("DS3USB: usb_data_cb: res %d, bytes %d, arg %p \n", resultCode, bytes, arg);
 
     hiddev[pad].usb_resultcode = resultCode;
 
@@ -177,7 +177,7 @@ static void usb_cmd_cb(int resultCode, int bytes, void *arg)
 {
     int pad = (int)arg;
 
-    //DPRINTF("DS3USB: usb_cmd_cb: res %d, bytes %d, arg %p \n", resultCode, bytes, arg);
+    // DPRINTF("DS3USB: usb_cmd_cb: res %d, bytes %d, arg %p \n", resultCode, bytes, arg);
 
     SignalSema(hiddev[pad].cmd_sema);
 }
@@ -196,7 +196,7 @@ static void usb_config_set(int result, int count, void *arg)
 static void read_report(u8 *data, int pad)
 {
     int i, count, pos, bits;
-    u8 up = 0, down = 0, left = 0, right = 0, mask;
+    u8 up = 0, down = 0, left = 0, right = 0;
 
 
     if (data[0] == 0x01) {
@@ -251,10 +251,10 @@ static void read_report(u8 *data, int pad)
                     break;
             }
             hiddev[pad].data[0] = ~(up << 4 | right << 5 | down << 6 | left << 7 | 0x0F);
-            hiddev[pad].data[6] = right * 255; //right
-            hiddev[pad].data[7] = left * 255;  //left
-            hiddev[pad].data[8] = up * 255;    //up
-            hiddev[pad].data[9] = down * 255;  //down
+            hiddev[pad].data[6] = right * 255; // right
+            hiddev[pad].data[7] = left * 255;  // left
+            hiddev[pad].data[8] = up * 255;    // up
+            hiddev[pad].data[9] = down * 255;  // down
 
             count = 12;
             bits = 4;
@@ -266,12 +266,12 @@ static void read_report(u8 *data, int pad)
         for (i = 0; i < count; i++) {
             pos = hiddev[pad].rep.buttons.start_pos + hiddev[pad].rep.buttons.size * i;
             if (i >= bits) {
-                //mask = ~(1 << (i - bits));
-                //hiddev[pad].data[1] &= mask | (((data[1 + pos / 8] >> pos % 8) & 1) << (i - bits));
+                // mask = ~(1 << (i - bits));
+                // hiddev[pad].data[1] &= mask | (((data[1 + pos / 8] >> pos % 8) & 1) << (i - bits));
                 hiddev[pad].data[1] |= (((data[1 + pos / 8] >> pos % 8) & 1) << (i - bits));
             } else {
-                //mask = ~(1 << i);
-                //hiddev[pad].data[0] &= mask | (((data[1 + pos / 8] >> pos % 8) & 1) << i);
+                // mask = ~(1 << i);
+                // hiddev[pad].data[0] &= mask | (((data[1 + pos / 8] >> pos % 8) & 1) << i);
                 hiddev[pad].data[0] |= (((data[1 + pos / 8] >> pos % 8) & 1) << i);
             }
         }
@@ -446,7 +446,7 @@ int read_report_descriptor(u8 *data, int size, hidreport_t *report)
     report->hats.count = 0;
 
     while (dSize > 0) {
-        if (*dPtr != 0xFE) { //short item tag
+        if (*dPtr != 0xFE) { // short item tag
 
             bSize = *dPtr & 3;
 
@@ -459,7 +459,7 @@ int read_report_descriptor(u8 *data, int size, hidreport_t *report)
             for (i = 0, dVal = 0; i < bSize; i++)
                 dVal |= *(dPtr + 1 + i) << (8 * i);
 
-            if (*dPtr == 0x85 && dVal == 2) //ReportID
+            if (*dPtr == 0x85 && dVal == 2) // ReportID
                 break;
 
             if (*dPtr == 0x95)
@@ -471,31 +471,31 @@ int read_report_descriptor(u8 *data, int size, hidreport_t *report)
             if (*dPtr == 0x09 || *dPtr == 0x05)
                 rUsage = dVal;
 
-            if (*dPtr == 0x81) { //Input
+            if (*dPtr == 0x81) { // Input
 
                 switch (rUsage) {
-                    case 0x09: //buttons
+                    case 0x09: // buttons
                         report->buttons.count = rCount;
                         report->buttons.size = rSize;
                         report->buttons.start_pos = rPos;
-                        printf("Usage buttons: rCount %d rSize %d rPos %d\n", rCount, rSize, rPos);
+                        DPRINTF("Usage buttons: rCount %d rSize %d rPos %d\n", rCount, rSize, rPos);
                         break;
-                    case 0x30: //x
-                    case 0x31: //y
-                    case 0x32: //z
-                    case 0x33: //rx
-                    case 0x34: //ry
-                    case 0x35: //rz
+                    case 0x30: // x
+                    case 0x31: // y
+                    case 0x32: // z
+                    case 0x33: // rx
+                    case 0x34: // ry
+                    case 0x35: // rz
                         report->axes.count = rCount;
                         report->axes.size = rSize;
                         report->axes.start_pos = rPos;
-                        printf("Usage axes: rCount %d rSize %d rPos %d\n", rCount, rSize, rPos);
+                        DPRINTF("Usage axes: rCount %d rSize %d rPos %d\n", rCount, rSize, rPos);
                         break;
-                    case 0x39: //hats
+                    case 0x39: // hats
                         report->hats.count = rCount;
                         report->hats.size = rSize;
                         report->hats.start_pos = rPos;
-                        printf("Usage hats: rCount %d rSize %d rPos %d\n", rCount, rSize, rPos);
+                        DPRINTF("Usage hats: rCount %d rSize %d rPos %d\n", rCount, rSize, rPos);
                         break;
                 }
 
@@ -507,7 +507,7 @@ int read_report_descriptor(u8 *data, int size, hidreport_t *report)
 
             dSize -= bSize + 1;
             dPtr += bSize + 1;
-        } else { //long item tag
+        } else { // long item tag
 
             bDataSize = *(dPtr + 1);
             bLongItemTag = *(dPtr + 2);

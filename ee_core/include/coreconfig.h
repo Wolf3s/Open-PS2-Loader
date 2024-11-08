@@ -64,6 +64,7 @@ struct EECoreConfig_t
     int EnablePadEmuOp;
     int PadEmuSettings;
     int PadMacroSettings;
+    int PadEmuModules;
 
     int EnableGSMOp;
     struct GsmConfig_t GsmConfig;

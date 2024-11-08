@@ -532,56 +532,56 @@ $(EE_ASM_DIR)ds34usb.c: modules/ds34usb/iop/ds34usb.irx | $(EE_ASM_DIR)
 modules/pademu/pademu.irx: modules/pademu
 	$(MAKE) -C $<
 
-$(EE_ASM_DIR)pademu.s: modules/pademu/pademu.irx
-	$(BIN2C) $< $@ pademu_irx
+$(EE_ASM_DIR)pademu.c: modules/pademu/pademu.irx
+	$(BIN2C) $< $@ $(*F)_irx
 
 modules/pademu/btstack/btstack.irx: modules/pademu/btstack
-	$(MAKE) -C $<
+	$(MAKE) -C $< all
 
-$(EE_ASM_DIR)btstack.s: modules/pademu/btstack/btstack.irx
-	$(BIN2C) $< $@ btstack_irx
+$(EE_ASM_DIR)btstack.c: modules/pademu/btstack/btstack.irx
+	$(BIN2C) $< $@ $(*F)_irx
 
 modules/pademu/ds3usb/ds3usb.irx: modules/pademu/ds3usb
-	$(MAKE) -C $<
+	$(MAKE) -C $< all
 
-$(EE_ASM_DIR)ds3usb.s: modules/pademu/ds3usb/ds3usb.irx
-	$(BIN2C) $< $@ ds3usb_irx
+$(EE_ASM_DIR)ds3usb.c: modules/pademu/ds3usb/ds3usb.irx
+	$(BIN2C) $< $@ $(*F)_irx
 
 modules/pademu/ds4usb/ds4usb.irx: modules/pademu/ds4usb
-	$(MAKE) -C $<
+	$(MAKE) -C $< all
 
-$(EE_ASM_DIR)ds4usb.s: modules/pademu/ds4usb/ds4usb.irx
-	$(BIN2C) $< $@ ds4usb_irx
+$(EE_ASM_DIR)ds4usb.c: modules/pademu/ds4usb/ds4usb.irx
+	$(BIN2C) $< $@ $(*F)_irx
 
 modules/pademu/xbox360usb/xbox360usb.irx: modules/pademu/xbox360usb
-	$(MAKE) -C $<
+	$(MAKE) -C $< all
 
-$(EE_ASM_DIR)xbox360usb.s: modules/pademu/xbox360usb/xbox360usb.irx
-	$(BIN2C) $< $@ xbox360usb_irx
+$(EE_ASM_DIR)xbox360usb.c: modules/pademu/xbox360usb/xbox360usb.irx
+	$(BIN2C) $< $@ $(*F)_irx
 
 modules/pademu/xboxoneusb/xboxoneusb.irx: modules/pademu/xboxoneusb
-	$(MAKE) -C $<
+	$(MAKE) -C $< all
 
-$(EE_ASM_DIR)xboxoneusb.s: modules/pademu/xboxoneusb/xboxoneusb.irx
-	$(BIN2C) $< $@ xboxoneusb_irx
+$(EE_ASM_DIR)xboxoneusb.c: modules/pademu/xboxoneusb/xboxoneusb.irx
+	$(BIN2C) $< $@ $(*F)_irx
 
 modules/pademu/ds3bt/ds3bt.irx: modules/pademu/ds3bt
-	$(MAKE) -C $<
+	$(MAKE) -C $< all
 
-$(EE_ASM_DIR)ds3bt.s: modules/pademu/ds3bt/ds3bt.irx
-	$(BIN2C) $< $@ ds3bt_irx
+$(EE_ASM_DIR)ds3bt.c: modules/pademu/ds3bt/ds3bt.irx
+	$(BIN2C) $< $@ $(*F)_irx
 
 modules/pademu/ds4bt/ds4bt.irx: modules/pademu/ds4bt
-	$(MAKE) -C $<
+	$(MAKE) -C $< all
 
-$(EE_ASM_DIR)ds4bt.s: modules/pademu/ds4bt/ds4bt.irx
-	$(BIN2C) $< $@ ds4bt_irx
+$(EE_ASM_DIR)ds4bt.c: modules/pademu/ds4bt/ds4bt.irx
+	$(BIN2C) $< $@ $(*F)_irx
 
 modules/pademu/hidusb/hidusb.irx: modules/pademu/hidusb
-	$(MAKE) -C $<
+	$(MAKE) -C $< all
 
-$(EE_ASM_DIR)hidusb.s: modules/pademu/hidusb/hidusb.irx
-	$(BIN2C) $< $@ hidusb_irx
+$(EE_ASM_DIR)hidusb.c: modules/pademu/hidusb/hidusb.irx
+	$(BIN2C) $< $@ $(*F)_irx
 
 $(EE_ASM_DIR)bdm.c: $(PS2SDK)/iop/irx/bdm.irx | $(EE_ASM_DIR)
 	$(BIN2C) $< $@ $(*F)_irx

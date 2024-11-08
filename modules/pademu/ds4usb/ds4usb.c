@@ -24,7 +24,7 @@ IRX_ID(MODNAME, 1, 1);
 
 
 #define REQ_USB_OUT (USB_DIR_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE)
-#define REQ_USB_IN (USB_DIR_IN | USB_TYPE_CLASS | USB_RECIP_INTERFACE)
+#define REQ_USB_IN  (USB_DIR_IN | USB_TYPE_CLASS | USB_RECIP_INTERFACE)
 
 #define MAX_PADS 4
 
@@ -115,7 +115,7 @@ int usb_connect(int devId)
             }
             if ((endpoint->bEndpointAddress & USB_ENDPOINT_DIR_MASK) == USB_DIR_OUT && ds4dev[pad].outEndp < 0) {
                 ds4dev[pad].outEndp = UsbOpenEndpointAligned(devId, endpoint);
-                DPRINTF("DS34USB: register Output endpoint id =%i addr=%02X packetSize=%i\n", ds4pad[pad].outEndp, endpoint->bEndpointAddress, (unsigned short int)endpoint->wMaxPacketSizeHB << 8 | endpoint->wMaxPacketSizeLB);
+                DPRINTF("DS34USB: register Output endpoint id =%i addr=%02X packetSize=%i\n", ds4dev[pad].outEndp, endpoint->bEndpointAddress, (unsigned short int)endpoint->wMaxPacketSizeHB << 8 | endpoint->wMaxPacketSizeLB);
             }
         }
 
@@ -175,7 +175,7 @@ static void usb_data_cb(int resultCode, int bytes, void *arg)
 {
     int pad = (int)arg;
 
-    //DPRINTF("usb_data_cb: res %d, bytes %d, arg %p \n", resultCode, bytes, arg);
+    // DPRINTF("usb_data_cb: res %d, bytes %d, arg %p \n", resultCode, bytes, arg);
 
     ds4dev[pad].usb_resultcode = resultCode;
 
@@ -186,7 +186,7 @@ static void usb_cmd_cb(int resultCode, int bytes, void *arg)
 {
     int pad = (int)arg;
 
-    //DPRINTF("usb_cmd_cb: res %d, bytes %d, arg %p \n", resultCode, bytes, arg);
+    // DPRINTF("usb_cmd_cb: res %d, bytes %d, arg %p \n", resultCode, bytes, arg);
 
     SignalSema(ds4dev[pad].cmd_sema);
 }
@@ -273,29 +273,29 @@ static void readReport(u8 *data, int pad)
         ds4dev[pad].data[0] = ~(report->Share | report->L3 << 1 | report->R3 << 2 | report->Option << 3 | up << 4 | right << 5 | down << 6 | left << 7);
         ds4dev[pad].data[1] = ~(report->L2 | report->R2 << 1 | report->L1 << 2 | report->R1 << 3 | report->Triangle << 4 | report->Circle << 5 | report->Cross << 6 | report->Square << 7);
 
-        ds4dev[pad].data[2] = report->RightStickX; //rx
-        ds4dev[pad].data[3] = report->RightStickY; //ry
-        ds4dev[pad].data[4] = report->LeftStickX;  //lx
-        ds4dev[pad].data[5] = report->LeftStickY;  //ly
+        ds4dev[pad].data[2] = report->RightStickX; // rx
+        ds4dev[pad].data[3] = report->RightStickY; // ry
+        ds4dev[pad].data[4] = report->LeftStickX;  // lx
+        ds4dev[pad].data[5] = report->LeftStickY;  // ly
 
-        ds4dev[pad].data[6] = right * 255; //right
-        ds4dev[pad].data[7] = left * 255;  //left
-        ds4dev[pad].data[8] = up * 255;    //up
-        ds4dev[pad].data[9] = down * 255;  //down
+        ds4dev[pad].data[6] = right * 255; // right
+        ds4dev[pad].data[7] = left * 255;  // left
+        ds4dev[pad].data[8] = up * 255;    // up
+        ds4dev[pad].data[9] = down * 255;  // down
 
-        ds4dev[pad].data[10] = report->Triangle * 255; //triangle
-        ds4dev[pad].data[11] = report->Circle * 255;   //circle
-        ds4dev[pad].data[12] = report->Cross * 255;    //cross
-        ds4dev[pad].data[13] = report->Square * 255;   //square
+        ds4dev[pad].data[10] = report->Triangle * 255; // triangle
+        ds4dev[pad].data[11] = report->Circle * 255;   // circle
+        ds4dev[pad].data[12] = report->Cross * 255;    // cross
+        ds4dev[pad].data[13] = report->Square * 255;   // square
 
-        ds4dev[pad].data[14] = report->L1 * 255;   //L1
-        ds4dev[pad].data[15] = report->R1 * 255;   //R1
-        ds4dev[pad].data[16] = report->PressureL2; //L2
-        ds4dev[pad].data[17] = report->PressureR2; //R2
+        ds4dev[pad].data[14] = report->L1 * 255;   // L1
+        ds4dev[pad].data[15] = report->R1 * 255;   // R1
+        ds4dev[pad].data[16] = report->PressureL2; // L2
+        ds4dev[pad].data[17] = report->PressureR2; // R2
 
-        if (report->PSButton) {                                          //display battery level
-            if (report->Share && (ds4dev[pad].btn_delay == MAX_DELAY)) { //PS + Share
-                if (ds4dev[pad].analog_btn < 2)                          //unlocked mode
+        if (report->PSButton) {                                          // display battery level
+            if (report->Share && (ds4dev[pad].btn_delay == MAX_DELAY)) { // PS + Share
+                if (ds4dev[pad].analog_btn < 2)                          // unlocked mode
                     ds4dev[pad].analog_btn = !ds4dev[pad].analog_btn;
 
                 ds4dev[pad].oldled[0] = rgbled_patterns[pad][(ds4dev[pad].analog_btn & 1)][0];
@@ -319,7 +319,7 @@ static void readReport(u8 *data, int pad)
                 ds4dev[pad].btn_delay--;
         }
 
-        if (report->Power != 0xB && report->Usb_plugged) //charging
+        if (report->Power != 0xB && report->Usb_plugged) // charging
             ds4dev[pad].oldled[3] = 1;
         else
             ds4dev[pad].oldled[3] = 0;
@@ -337,14 +337,14 @@ static int LEDRumble(u8 *led, u8 lrum, u8 rrum, int pad)
     usb_buf[0] = 0x05;
     usb_buf[1] = 0xFF;
 
-    usb_buf[4] = rrum * 255; //ds4 has full control
+    usb_buf[4] = rrum * 255; // ds4 has full control
     usb_buf[5] = lrum;
 
-    usb_buf[6] = led[0]; //r
-    usb_buf[7] = led[1]; //g
-    usb_buf[8] = led[2]; //b
+    usb_buf[6] = led[0]; // r
+    usb_buf[7] = led[1]; // g
+    usb_buf[8] = led[2]; // b
 
-    if (led[3]) //means charging, so blink
+    if (led[3]) // means charging, so blink
     {
         usb_buf[9] = 0x80;  // Time to flash bright (255 = 2.5 seconds)
         usb_buf[10] = 0x80; // Time to flash dark (255 = 2.5 seconds)
