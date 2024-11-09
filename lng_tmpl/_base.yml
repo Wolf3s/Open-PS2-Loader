@@ -689,7 +689,7 @@ gui_strings:
 - label: YSENSITIVITY
   string: Analog Y-Axis Sensitivity
 - label: PADEMU_MODULES
-  string: Select modules to load
+  string: 'Select modules to load:'
 - label: HINT_PADEMU_MODULES
   string: Select which pademu modules to load.
 - label: HINT_PADEMU_MODULES_SET
