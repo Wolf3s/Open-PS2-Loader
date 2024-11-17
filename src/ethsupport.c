@@ -620,11 +620,11 @@ static void ethLaunchGame(item_list_t *itemList, int id, config_set_t *configSet
             }
         }
 
-        for (i = 0; i < size_smb_mcemu_irx; i++) {
-            if (((u32 *)&smb_mcemu_irx)[i] == (0xC0DEFAC0 + vmc_id)) {
+        for (i = 0; i < size_mcemu_irx; i++) {
+            if (((u32 *)&mcemu_irx)[i] == (0xC0DEFAC0 + vmc_id)) {
                 if (smb_vmc_infos.active)
-                    size_mcemu_irx = size_smb_mcemu_irx;
-                memcpy(&((u32 *)&smb_mcemu_irx)[i], &smb_vmc_infos, sizeof(smb_vmc_infos_t));
+                    size_mcemu_irx = size_mcemu_irx;
+                memcpy(&((u32 *)&mcemu_irx)[i], &smb_vmc_infos, sizeof(smb_vmc_infos_t));
                 break;
             }
         }
@@ -711,7 +711,7 @@ static void ethLaunchGame(item_list_t *itemList, int id, config_set_t *configSet
     // adjust ZSO cache
     settings->common.zso_cache = smbCacheSize;
 
-    sysLaunchLoaderElf(filename, "ETH_MODE", size_smb_cdvdman_irx, smb_cdvdman_irx, size_mcemu_irx, smb_mcemu_irx, EnablePS2Logo, compatmask);
+    sysLaunchLoaderElf(filename, "ETH_MODE", size_smb_cdvdman_irx, smb_cdvdman_irx, size_mcemu_irx, mcemu_irx, EnablePS2Logo, compatmask);
 }
 
 static config_set_t *ethGetConfig(item_list_t *itemList, int id)

@@ -7,7 +7,11 @@
 
 #include "mcemu.h"
 
-int DeviceWritePage(int mc_num, void *buf, u32 page_num)
+static int bdmMcemuDeviceWritePage(int mc_num, void *buf, u32 page_num);
+static int bdmMcemuDeviceReadPage(int mc_num, void *buf, u32 page_num);
+static void bdmMcemuDeviceShutdown(void);
+
+static int bdmMcemuDeviceWritePage(int mc_num, void *buf, u32 page_num)
 {
     u32 lba;
 
@@ -19,7 +23,7 @@ int DeviceWritePage(int mc_num, void *buf, u32 page_num)
     return 1;
 }
 
-int DeviceReadPage(int mc_num, void *buf, u32 page_num)
+static int bdmMcemuDeviceReadPage(int mc_num, void *buf, u32 page_num)
 {
     u32 lba;
 
@@ -31,6 +35,13 @@ int DeviceReadPage(int mc_num, void *buf, u32 page_num)
     return 1;
 }
 
-void DeviceShutdown(void)
+void bdmMcemuDeviceShutdown(void)
 {
 }
+
+devfunc mcemu_bdm = 
+{
+    bdmMcemuDeviceWritePage,
+    bdmMcemuDeviceReadPage,
+    bdmMcemuDeviceShutdown,
+};

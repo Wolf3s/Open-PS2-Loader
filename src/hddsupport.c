@@ -431,11 +431,11 @@ void hddLaunchGame(item_list_t *itemList, int id, config_set_t *configSet)
                         LOG("VMC error\n");
                 }
 
-                for (i = 0; i < size_hdd_mcemu_irx; i++) {
-                    if (((u32 *)&hdd_mcemu_irx)[i] == (0xC0DEFAC0 + vmc_id)) {
+                for (i = 0; i < size_mcemu_irx; i++) {
+                    if (((u32 *)&mcemu_irx)[i] == (0xC0DEFAC0 + vmc_id)) {
                         if (hdd_vmc_infos.active)
-                            size_mcemu_irx = size_hdd_mcemu_irx;
-                        memcpy(&((u32 *)&hdd_mcemu_irx)[i], &hdd_vmc_infos, sizeof(hdd_vmc_infos_t));
+                            size_mcemu_irx = size_mcemu_irx;
+                        memcpy(&((u32 *)&mcemu_irx)[i], &hdd_vmc_infos, sizeof(hdd_vmc_infos_t));
                         break;
                     }
                 }
@@ -533,7 +533,7 @@ void hddLaunchGame(item_list_t *itemList, int id, config_set_t *configSet)
     // adjust ZSO cache
     settings->common.zso_cache = hddCacheSize;
 
-    sysLaunchLoaderElf(filename, "HDD_MODE", size_irx, irx, size_mcemu_irx, hdd_mcemu_irx, EnablePS2Logo, compatMode);
+    sysLaunchLoaderElf(filename, "HDD_MODE", size_irx, irx, size_mcemu_irx, mcemu_irx, EnablePS2Logo, compatMode);
 }
 
 static config_set_t *hddGetConfig(item_list_t *itemList, int id)

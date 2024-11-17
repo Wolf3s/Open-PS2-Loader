@@ -7,7 +7,13 @@
 
 #include "mcemu.h"
 
-int DeviceWritePage(int mc_num, void *buf, u32 page_num)
+devfunc mcemu_smb;
+
+static int smbMcemuDeviceWritePage(int mc_num, void *buf, u32 page_num);
+static int smbMcemuDeviceReadPage(int mc_num, void *buf, u32 page_num);
+static void smbMcemuDeviceShutdown(void);
+
+static int smbMcemuDeviceWritePage(int mc_num, void *buf, u32 page_num)
 {
     u32 offset;
 
@@ -17,7 +23,7 @@ int DeviceWritePage(int mc_num, void *buf, u32 page_num)
     return (smb_WriteFile(vmcSpec[mc_num].fid, offset, 0, buf, vmcSpec[mc_num].cspec.PageSize) != 0 ? 1 : 0);
 }
 
-int DeviceReadPage(int mc_num, void *buf, u32 page_num)
+static int smbMcemuDeviceReadPage(int mc_num, void *buf, u32 page_num)
 {
     u32 offset;
 
@@ -32,7 +38,7 @@ int DeviceReadPage(int mc_num, void *buf, u32 page_num)
     return (smb_ReadFile(vmcSpec[mc_num].fid, offset, 0, buf, vmcSpec[mc_num].cspec.PageSize) != 0 ? 1 : 0);
 }
 
-void DeviceShutdown(void)
+static void smbMcemuDeviceShutdown(void)
 {
     int i;
 
@@ -44,3 +50,10 @@ void DeviceShutdown(void)
         }
     }
 }
+
+devfunc mcemu_smb = 
+{
+    smbMcemuDeviceWritePage,
+    smbMcemuDeviceReadPage,
+    smbMcemuDeviceShutdown
+};

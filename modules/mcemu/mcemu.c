@@ -8,6 +8,21 @@
 #include "mcemu.h"
 
 static int readyToGo = -1;
+
+static const devfunc *const mcemu_func =
+{
+#ifdef BDM_DRIVER
+        &mcemu_bdm,
+#endif
+#ifdef HDD_DRIVER
+        &mcemu_hdd,
+#endif
+#ifdef SMB_DRIVER
+        &mcemu_smb,
+#endif
+        NULL,
+};
+
 void StartNow(void *param);
 #ifdef PADEMU
 void no_pademu(Sio2Packet *sd, Sio2McProc sio2proc)
@@ -22,7 +37,7 @@ void (*pademu_hookSio2man)(Sio2Packet *sd, Sio2McProc sio2proc) = no_pademu;
 //---------------------------------------------------------------------------
 static void mcemuShutdown(void)
 { // If necessary, implement some locking mechanism to prevent further requests from being made.
-    DeviceShutdown();
+    mcemu_func->DeviceShutdown();
 }
 
 //---------------------------------------------------------------------------
@@ -648,7 +663,7 @@ int MceEraseBlock(MemoryCard *mcd, int page)
     mips_memset(mcd->dbufp, r, mcd->cspec.PageSize);
 
     for (i = 0; i < mcd->cspec.BlockSize; i++) {
-        r = DeviceWritePage(mcd->mcnum, mcd->dbufp, page + i);
+        r = mcemu_func->DeviceWritePage(mcd->mcnum, mcd->dbufp, page + i);
         if (!r) {
             DPRINTF("erase error\n");
             return 0;
@@ -666,7 +681,7 @@ static int do_read(MemoryCard *mcd)
     r = (mcd->flags & 0x10) ? 0xFF : 0x0;
     mips_memset(mcd->cbufp, r, 0x10);
 
-    r = DeviceReadPage(mcd->mcnum, mcd->dbufp, mcd->rpage);
+    r = mcemu_func->DeviceReadPage(mcd->mcnum, mcd->dbufp, mcd->rpage);
     if (!r) {
         DPRINTF("read error\n");
         return 0;
@@ -768,7 +783,7 @@ restart:
         size = tot_size - size;
         mcd->wroff = 0;
 
-        r = DeviceWritePage(mcd->mcnum, mcd->dbufp, mcd->wpage);
+        r = mcemu_func->DeviceWritePage(mcd->mcnum, mcd->dbufp, mcd->wpage);
         if (!r) {
             DPRINTF("write error.\n");
             return 0;

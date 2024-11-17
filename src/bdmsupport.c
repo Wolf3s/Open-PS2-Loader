@@ -387,11 +387,11 @@ void bdmLaunchGame(item_list_t *itemList, int id, config_set_t *configSet)
         } else
             LOG("VMC error\n");
 
-        for (i = 0; i < size_bdm_mcemu_irx; i++) {
-            if (((u32 *)&bdm_mcemu_irx)[i] == (0xC0DEFAC0 + vmc_id)) {
+        for (i = 0; i < size_mcemu_irx; i++) {
+            if (((u32 *)&mcemu_irx)[i] == (0xC0DEFAC0 + vmc_id)) {
                 if (bdm_vmc_infos.active)
-                    size_mcemu_irx = size_bdm_mcemu_irx;
-                memcpy(&((u32 *)&bdm_mcemu_irx)[i], &bdm_vmc_infos, sizeof(bdm_vmc_infos_t));
+                    size_mcemu_irx = size_mcemu_irx;
+                memcpy(&((u32 *)&mcemu_irx)[i], &bdm_vmc_infos, sizeof(bdm_vmc_infos_t));
                 break;
             }
         }
@@ -512,13 +512,13 @@ void bdmLaunchGame(item_list_t *itemList, int id, config_set_t *configSet)
     LOG("bdm pre sysLaunchLoaderElf\n");
     if (!strcmp(bdmCurrentDriver, "usb")) {
         settings->common.fakemodule_flags |= FAKE_MODULE_FLAG_USBD;
-        sysLaunchLoaderElf(filename, "BDM_USB_MODE", irx_size, irx, size_mcemu_irx, bdm_mcemu_irx, EnablePS2Logo, compatmask);
+        sysLaunchLoaderElf(filename, "BDM_USB_MODE", irx_size, irx, size_mcemu_irx, mcemu_irx, EnablePS2Logo, compatmask);
     } else if (!strcmp(bdmCurrentDriver, "sd") && strlen(bdmCurrentDriver) == 2) {
         settings->common.fakemodule_flags |= 0 /* TODO! fake ilinkman ? */;
-        sysLaunchLoaderElf(filename, "BDM_ILK_MODE", irx_size, irx, size_mcemu_irx, bdm_mcemu_irx, EnablePS2Logo, compatmask);
+        sysLaunchLoaderElf(filename, "BDM_ILK_MODE", irx_size, irx, size_mcemu_irx, mcemu_irx, EnablePS2Logo, compatmask);
     } else if (!strcmp(bdmCurrentDriver, "sdc") && strlen(bdmCurrentDriver) == 3) {
         settings->common.fakemodule_flags |= 0;
-        sysLaunchLoaderElf(filename, "BDM_M4S_MODE", irx_size, irx, size_mcemu_irx, bdm_mcemu_irx, EnablePS2Logo, compatmask);
+        sysLaunchLoaderElf(filename, "BDM_M4S_MODE", irx_size, irx, size_mcemu_irx, mcemu_irx, EnablePS2Logo, compatmask);
     }
 }
 

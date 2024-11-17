@@ -7,6 +7,10 @@
 
 #include "mcemu.h"
 
+static int hddMcemuDeviceWritePage(int mc_num, void *buf, u32 page_num);
+static int hddMcemuDeviceReadPage(int mc_num, void *buf, u32 page_num);
+static void hddMcemuDeviceShutdown(void);
+
 /* Return ata sector corresponding to page number in vmc file */
 static u32 Mcpage_to_Apasector(int mc_num, u32 mc_page)
 {
@@ -27,7 +31,7 @@ static u32 Mcpage_to_Apasector(int mc_num, u32 mc_page)
     return sector_to_read;
 }
 
-int DeviceWritePage(int mc_num, void *buf, u32 page_num)
+static int hddMcemuDeviceWritePage(int mc_num, void *buf, u32 page_num)
 {
     u32 lba;
 
@@ -37,7 +41,7 @@ int DeviceWritePage(int mc_num, void *buf, u32 page_num)
     return (sceAtaDmaTransfer(0, buf, lba, 1, ATA_DIR_WRITE) == 0 ? 1 : 0);
 }
 
-int DeviceReadPage(int mc_num, void *buf, u32 page_num)
+static int hddMcemuDeviceReadPage(int mc_num, void *buf, u32 page_num)
 {
     u32 lba;
 
@@ -47,6 +51,13 @@ int DeviceReadPage(int mc_num, void *buf, u32 page_num)
     return (sceAtaDmaTransfer(0, buf, lba, 1, ATA_DIR_READ) == 0 ? 1 : 0);
 }
 
-void DeviceShutdown(void)
+static void hddMcemuDeviceShutdown(void)
 {
 }
+
+devfunc mcemu_hdd = 
+{
+    hddMcemuDeviceWritePage,
+    hddMcemuDeviceReadPage,
+    hddMcemuDeviceShutdown
+};

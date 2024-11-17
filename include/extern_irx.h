@@ -14,8 +14,6 @@ IMPORT_BIN2C(bdm_irx);
 
 IMPORT_BIN2C(bdm_cdvdman_irx);
 
-IMPORT_BIN2C(bdm_mcemu_irx);
-
 IMPORT_BIN2C(bdmevent_irx);
 
 IMPORT_BIN2C(bdmfs_fatfs_irx);
@@ -46,7 +44,7 @@ IMPORT_BIN2C(hdd_hdpro_cdvdman_irx);
 
 IMPORT_BIN2C(lwnbdsvr_irx);
 
-IMPORT_BIN2C(hdd_mcemu_irx);
+IMPORT_BIN2C(mcemu_irx);
 
 IMPORT_BIN2C(hdpro_atad_irx);
 
@@ -109,8 +107,6 @@ IMPORT_BIN2C(mx4sio_bd_irx);
 IMPORT_BIN2C(smap_irx);
 
 IMPORT_BIN2C(smap_ingame_irx);
-
-IMPORT_BIN2C(smb_mcemu_irx);
 
 IMPORT_BIN2C(smb_cdvdman_irx);
 
