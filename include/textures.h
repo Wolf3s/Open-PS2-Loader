@@ -1,6 +1,8 @@
 #ifndef __TEXTURES_H
 #define __TEXTURES_H
 
+#include <png.h>
+
 enum INTERNAL_TEXTURE {
     LOAD0_ICON = 0,
     LOAD1_ICON,
@@ -95,6 +97,18 @@ enum INTERNAL_TEXTURE {
     TEXTURES_COUNT
 };
 
+typedef struct
+{
+    png_colorp palette;
+    int numPalette;
+    int numTrans;
+    png_bytep trans;
+
+    int numFrames;     // Number of frames in the APNG
+    int *frameDelays;  // Frame delays in milliseconds
+    GSTEXTURE *frames; // Pointer array to store frame data    
+} png_texture_t;
+
 #define ERR_BAD_FILE      -1
 #define ERR_READ_STRUCT   -2
 #define ERR_INFO_STRUCT   -3
@@ -102,6 +116,8 @@ enum INTERNAL_TEXTURE {
 #define ERR_BAD_DIMENSION -5
 #define ERR_MISSING_ALPHA -6
 #define ERR_BAD_DEPTH     -7
+
+extern png_texture_t pngTexture;
 
 int texLookupInternalTexId(const char *name);
 int texLoadInternal(GSTEXTURE *texture, int texId);

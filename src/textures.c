@@ -116,15 +116,7 @@ typedef struct
     u8 alpha;
 } png_clut_t;
 
-typedef struct
-{
-    png_colorp palette;
-    int numPalette;
-    int numTrans;
-    png_bytep trans;
-} png_texture_t;
-
-static png_texture_t pngTexture;
+png_texture_t pngTexture;
 
 static texture_t internalDefault[TEXTURES_COUNT] = {
     {LOAD0_ICON, "load0", &load0_png},
@@ -271,6 +263,20 @@ void texFree(GSTEXTURE *texture)
         free(texture->Clut);
         texture->Clut = NULL;
     }
+
+    if (pngTexture.frames) {
+        for (int i = 0; i < pngTexture.numFrames; i++) {
+            if (pngTexture.frames[i].Mem)
+                free(pngTexture.frames[i].Mem);
+        }
+        free(pngTexture.frames);
+        pngTexture.frames = NULL;
+    }
+    if (pngTexture.frameDelays) {
+        free(pngTexture.frameDelays);
+        pngTexture.frameDelays = NULL;
+    }
+
 }
 
 static int texEnd(png_structp pngPtr, png_infop infoPtr, void *pFileBuffer, int status)
@@ -374,6 +380,40 @@ static void texReadPixels32(GSTEXTURE *texture, png_bytep *rowPointers, size_t s
     }
 }
 
+void texLoadAPNGFrames(GSTEXTURE *texture, png_structp pngPtr, png_infop infoPtr,
+                       png_bytep *rowPointers, void (*texPngReadPixels)(GSTEXTURE *, png_bytep *, size_t), size_t size)
+{
+    if (pngTexture.numFrames > 1) {
+        pngTexture.frames = malloc(pngTexture.numFrames * sizeof(GSTEXTURE));
+        if (!pngTexture.frames) {
+            LOG("Failed to allocate memory for APNG frames\n");
+            return;
+        }
+        for (unsigned int frame = 0; frame < pngTexture.numFrames; frame++) {
+            GSTEXTURE *frameTexture = &pngTexture.frames[frame];
+            texPrepare(frameTexture);
+            frameTexture->Width = texture->Width;
+            frameTexture->Height = texture->Height;
+            frameTexture->PSM = texture->PSM;
+            size_t frameSize = gsKit_texture_size_ee(frameTexture->Width, frameTexture->Height, frameTexture->PSM);
+            frameTexture->Mem = memalign(128, frameSize);
+            if (!frameTexture->Mem) {
+                LOG("Failed to allocate memory for frame %u\n", frame);
+                free(pngTexture.frames);
+                return;
+            }
+            if (frame == 0) {
+                // First frame uses the existing row data
+                texPngReadPixels(frameTexture, rowPointers, frameSize);
+            } else {
+                png_read_frame_head(pngPtr, infoPtr);
+                png_read_image(pngPtr, rowPointers);
+                texPngReadPixels(frameTexture, rowPointers, frameSize);
+            }
+        }
+    }
+}
+
 static void texReadData(GSTEXTURE *texture, png_structp pngPtr, png_infop infoPtr,
                         void (*texPngReadPixels)(GSTEXTURE *texture, png_bytep *rowPointers, size_t size))
 {
@@ -388,11 +428,19 @@ static void texReadData(GSTEXTURE *texture, png_structp pngPtr, png_infop infoPt
     }
 
     png_bytep *rowPointers = calloc(texture->Height, sizeof(png_bytep));
+    if (!rowPointers) {
+        LOG("TEXTURES PngReadData: Failed to allocate row pointers\n");
+        free(texture->Mem);
+        texture->Mem = NULL;
+        return;
+    }
 
     png_bytep allRows = malloc(rowBytes * texture->Height);
     if (!allRows) {
-        free(rowPointers);
         LOG("TEXTURES PngReadData: Failed to allocate memory for PNG rows\n");
+        free(rowPointers);
+        free(texture->Mem);
+        texture->Mem = NULL;
         return;
     }
 
@@ -401,7 +449,10 @@ static void texReadData(GSTEXTURE *texture, png_structp pngPtr, png_infop infoPt
 
     png_read_image(pngPtr, rowPointers);
 
-    texPngReadPixels(texture, rowPointers, size);
+    if (pngTexture.numFrames > 1) /* TODO: Cleanup. */
+        texLoadAPNGFrames(texture, pngPtr, infoPtr, rowPointers, texPngReadPixels, size);
+    else
+        texPngReadPixels(texture, rowPointers, size);
 
     free(allRows);
     free(rowPointers);
@@ -418,6 +469,14 @@ static int texLoadAll(GSTEXTURE *texture, const char *filePath, int texId)
     png_rw_ptr readFunction = NULL;
     void *PngFileBufferPtr;
     void *pFileBuffer = NULL;
+    png_texture_t pngTexture = {
+        .numFrames = 0,
+        .frames = NULL,
+        .frameDelays = NULL,
+        .palette = NULL,
+        .numPalette = 0,
+        .trans = NULL,
+        .numTrans = 0};
 
     if (filePath) {
         int fd = open(filePath, O_RDONLY, 0);
@@ -443,7 +502,7 @@ static int texLoadAll(GSTEXTURE *texture, const char *filePath, int texId)
         close(fd);
 
         PngFileBufferPtr = pFileBuffer;
-        readData = &PngFileBufferPtr;
+        readData = &PngFileBufferPtr;        
         readFunction = &texReadMemFunction;
     } else {
         if (texId == -1 || !internalDefault[texId].texture)
@@ -526,6 +585,27 @@ static int texLoadAll(GSTEXTURE *texture, const char *filePath, int texId)
             break;
         default:
             return texEnd(pngPtr, infoPtr, pFileBuffer, ERR_BAD_DEPTH);
+    }
+
+    if (png_get_valid(pngPtr, infoPtr, PNG_INFO_acTL)) {
+        unsigned int numFrames, plays;
+        png_get_acTL(pngPtr, infoPtr, &numFrames, &plays);
+        LOG("APNG detected: %u frames, %u plays\n", numFrames, plays);
+        pngTexture.numFrames = numFrames;
+        pngTexture.frameDelays = calloc(numFrames, sizeof(int));
+        if (!pngTexture.frameDelays) {
+            LOG("Failed to allocate memory for frame delays\n");
+            return texEnd(pngPtr, infoPtr, pFileBuffer, ERR_BAD_FILE);
+        }
+
+        for (unsigned int i = 0; i < numFrames; i++) 
+        {
+            png_read_frame_head(pngPtr, infoPtr);
+            png_uint_32 delayNum = 0, delayDen = 1;
+            if (png_get_valid(pngPtr, infoPtr, PNG_INFO_fcTL))
+                png_get_next_frame_fcTL(pngPtr, infoPtr, &delayNum, &delayDen, NULL, NULL, NULL, NULL, NULL, NULL);
+            pngTexture.frameDelays[i] = (delayDen == 0) ? 100 : (int)((double)delayNum / delayDen * 1000);
+        }
     }
 
     if (texSizeValidate(texture->Width, texture->Height, texture->PSM) < 0) {
