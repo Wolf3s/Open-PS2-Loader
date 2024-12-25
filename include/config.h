@@ -161,6 +161,7 @@ int configGetStr(config_set_t *configSet, const char *key, const char **value);
 int configGetStrCopy(config_set_t *configSet, const char *key, char *value, int length);
 int configSetInt(config_set_t *configSet, const char *key, const int value);
 int configGetInt(config_set_t *configSet, const char *key, int *value);
+int configGetStat(config_set_t *configSet, struct stat *st);
 int configSetColor(config_set_t *configSet, const char *key, unsigned char *color);
 int configGetColor(config_set_t *configSet, const char *key, unsigned char *color);
 int configRemoveKey(config_set_t *configSet, const char *key);
