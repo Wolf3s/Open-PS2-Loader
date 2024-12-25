@@ -893,7 +893,7 @@ static void _loadConfig()
             if (!(getKeyPressed(KEY_TRIANGLE) && getKeyPressed(KEY_CROSS))) {
                 configGetInt(configOPL, CONFIG_OPL_VMODE, &gVMode);
             } else {
-                LOG("--- Select held at boot - setting Video Mode to Auto ---\n");
+                LOG("--- Triangle + Cross held at boot - setting Video Mode to Auto ---\n");
                 gVMode = 0;
                 configSetInt(configOPL, CONFIG_OPL_VMODE, gVMode);
             }
@@ -1176,6 +1176,13 @@ void applyConfig(int themeID, int langID, int skipDeviceRefresh)
                 continue;
 
             moduleUpdateMenuInternal(&list_support[i], changed, langChanged);
+        }
+    } else {
+        if (changed) {
+            for (int i = 0; i < MODE_COUNT; i++) {
+                if (list_support[i].support && list_support[i].subMenu)
+                    submenuRebuildCache(list_support[i].subMenu);
+            }
         }
     }
 
