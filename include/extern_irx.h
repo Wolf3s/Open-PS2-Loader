@@ -58,7 +58,7 @@ IMPORT_BIN2C(iLinkman_irx);
 
 IMPORT_BIN2C(imgdrv_irx);
 
-IMPORT_BIN2C(ingame_smstcpip_irx);
+IMPORT_BIN2C(ingame_ps2ip_irx);
 
 IMPORT_BIN2C(iomanx_irx);
 

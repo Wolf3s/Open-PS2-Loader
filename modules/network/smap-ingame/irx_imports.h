@@ -6,7 +6,7 @@
 /* Please keep these in alphabetical order!  */
 #include <dmacman.h>
 #include <dev9.h>
-#include "smstcpip.h"
+#include <ps2ip.h>
 #include <stdio.h>
 #include <sysclib.h>
 #include <thbase.h>

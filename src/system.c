@@ -523,8 +523,8 @@ static unsigned int sendIrxKernelRAM(const char *startup, const char *mode_str, 
     if (modules & CORE_IRX_ETH) {
         irxptr_tab[modcount].info = size_smap_ingame_irx | SET_OPL_MOD_ID(OPL_MODULE_ID_SMAP);
         irxptr_tab[modcount++].ptr = (void *)&smap_ingame_irx;
-        irxptr_tab[modcount].info = size_ingame_smstcpip_irx | SET_OPL_MOD_ID(OPL_MODULE_ID_SMSTCPIP);
-        irxptr_tab[modcount++].ptr = (void *)&ingame_smstcpip_irx;
+        irxptr_tab[modcount].info = size_ingame_ps2ip_irx | SET_OPL_MOD_ID(OPL_MODULE_ID_PS2IP);
+        irxptr_tab[modcount++].ptr = (void *)&ingame_ps2ip_irx;
     }
     if (modules & CORE_IRX_SMB) {
         irxptr_tab[modcount].info = size_smbinit_irx | SET_OPL_MOD_ID(OPL_MODULE_ID_SMBINIT);

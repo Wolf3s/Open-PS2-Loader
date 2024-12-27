@@ -3,8 +3,6 @@
 
 #define MAX_FRAME_SIZE 1518
 
-#define PRE_LWIP_130_COMPAT 1
-
 struct SmapDriverData
 {
     volatile u8 *smap_regbase;

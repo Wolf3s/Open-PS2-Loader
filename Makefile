@@ -89,7 +89,7 @@ EECORE_OBJS = ee_core.o ioprp.o util.o \
 		udnl.o imgdrv.o eesync.o \
 		bdm_cdvdman.o IOPRP_img.o smb_cdvdman.o \
 		hdd_cdvdman.o hdd_hdpro_cdvdman.o cdvdfsv.o \
-		ingame_smstcpip.o smap_ingame.o smbman.o smbinit.o
+		ingame_ps2ip.o smap_ingame.o smbman.o smbinit.o
 
 PNG_ASSETS = load0 load1 load2 load3 load4 load5 load6 load7 usb usb_bd ilk_bd \
 	m4s_bd hdd_bd hdd eth app cross triangle circle square select start left right \
@@ -181,7 +181,6 @@ ifeq ($(DEBUG),1)
     EECORE_EXTRA_FLAGS += LOAD_DEBUG_MODULES=1
     CDVDMAN_DEBUG_FLAGS = IOPCORE_DEBUG=1
     MCEMU_DEBUG_FLAGS = IOPCORE_DEBUG=1
-    SMSTCPIP_INGAME_CFLAGS =
     ifeq ($(TTY_APPROACH),UDP)
       IOP_OBJS += udptty-ingame.o
     endif
@@ -192,7 +191,6 @@ ifeq ($(DEBUG),1)
     EE_CFLAGS += -D__INGAME_DEBUG
     EECORE_EXTRA_FLAGS += LOAD_DEBUG_MODULES=1
     CDVDMAN_DEBUG_FLAGS = IOPCORE_DEBUG=1
-    SMSTCPIP_INGAME_CFLAGS =
     ifeq ($(DECI2_DEBUG),1)
       EE_CFLAGS += -D__DECI2_DEBUG
       EECORE_EXTRA_FLAGS += DECI2_DEBUG=1
@@ -208,7 +206,6 @@ ifeq ($(DEBUG),1)
   endif
 else
   EE_CFLAGS += -O2
-  SMSTCPIP_INGAME_CFLAGS = INGAME_DRIVER=1
 endif
 
 EE_CFLAGS += -fsingle-precision-constant -DOPL_VERSION=\"$(OPL_VERSION)\"
@@ -297,8 +294,6 @@ clean:	download_lwNBD
 	$(MAKE) -C modules/isofs clean
 	echo " -bdmevent"
 	$(MAKE) -C modules/bdmevent clean
-	echo " -SMSTCPIP"
-	$(MAKE) -C modules/network/SMSTCPIP clean
 	echo " -in-game SMAP"
 	$(MAKE) -C modules/network/smap-ingame clean
 	echo " -smbinit"
@@ -574,10 +569,7 @@ $(EE_ASM_DIR)ps2dev9.c: $(PS2SDK)/iop/irx/ps2dev9.irx | $(EE_ASM_DIR)
 $(EE_ASM_DIR)ps2ip.c: $(PS2SDK)/iop/irx/ps2ip-nm.irx | $(EE_ASM_DIR)
 	$(BIN2C) $< $@ $(*F)_irx
 
-modules/network/SMSTCPIP/SMSTCPIP.irx: modules/network/SMSTCPIP
-	$(MAKE) $(SMSTCPIP_INGAME_CFLAGS) -C $< rebuild
-
-$(EE_ASM_DIR)ingame_smstcpip.c: modules/network/SMSTCPIP/SMSTCPIP.irx | $(EE_ASM_DIR)
+$(EE_ASM_DIR)ingame_ps2ip.c: $(PS2SDK)/iop/irx/ps2ip.irx | $(EE_ASM_DIR)
 	$(BIN2C) $< $@ $(*F)_irx
 
 modules/network/smap-ingame/smap.irx: modules/network/smap-ingame

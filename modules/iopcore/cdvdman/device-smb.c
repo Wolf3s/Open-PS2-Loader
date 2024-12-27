@@ -4,7 +4,7 @@
   Review Open PS2 Loader README & LICENSE files for further details.
 */
 
-#include "smstcpip.h"
+#include <ps2ip.h>
 #include "internal.h"
 
 #include "device.h"

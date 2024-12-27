@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <sysclib.h>
-#include "smstcpip.h"
+#include <ps2ip.h>
 #include <limits.h>
 #include <thbase.h>
 #include <thsemap.h>

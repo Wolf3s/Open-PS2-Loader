@@ -523,6 +523,7 @@ static int ethUpdateGameList(item_list_t *itemList)
         } else if (count < 0) {
             gNetworkStartup = ERROR_ETH_SMB_LISTSHARES;
             ethDisplayErrorStatus();
+            return 0;
         }
     }
     return ethGameCount;

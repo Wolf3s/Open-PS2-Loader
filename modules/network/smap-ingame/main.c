@@ -10,8 +10,8 @@
 #include <loadcore.h>
 #include <thbase.h>
 #include <intrman.h>
-
-#include "smstcpip.h"
+#include "ps2ip.h"
+#include "tcpip.h"
 
 #include "main.h"
 
@@ -22,7 +22,7 @@ IRX_ID("smap_driver", 2, 1);
 #define IFNAME0 's'
 #define IFNAME1 'm'
 
-typedef struct ip_addr IPAddr;
+typedef struct ip4_addr IPAddr;
 typedef struct netif NetIF;
 typedef struct SMapIF SMapIF;
 typedef struct pbuf PBuf;
@@ -151,7 +151,6 @@ void SMapLowLevelInput(PBuf *pBuf)
 {
     // When we receive data, the interrupt-handler will invoke this function, which means we are in an interrupt-context. Pass on
     // the received data to ps2ip.
-
     ps2ip_input(pBuf, &NIF);
 }
 
