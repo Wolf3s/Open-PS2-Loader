@@ -5,9 +5,9 @@
  */
 
 #include "include/opl.h"
+#include "include/dialogs.h"
 #include "include/gui.h"
 #include "include/renderman.h"
-#include "include/menu.h"
 #include "include/fntsys.h"
 #include "include/ioman.h"
 #include "include/lang.h"

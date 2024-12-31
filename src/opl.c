@@ -11,25 +11,16 @@
 #include "include/renderman.h"
 #include "include/lang.h"
 #include "include/themes.h"
-#include "include/textures.h"
 #include "include/pad.h"
-#include "include/texcache.h"
-#include "include/dia.h"
 #include "include/dialogs.h"
-#include "include/menu.h"
 #include "include/system.h"
-#include "include/debug.h"
 #include "include/config.h"
 #include "include/util.h"
 #include "include/compatupd.h"
 #include "include/extern_irx.h"
 #include "httpclient.h"
-
-#include "include/supportbase.h"
-#include "include/bdmsupport.h"
-#include "include/ethsupport.h"
-#include "include/hddsupport.h"
-#include "include/appsupport.h"
+#include "ethsupport.h"
+#include "appsupport.h"
 
 #include "include/cheatman.h"
 #include "include/sound.h"
@@ -47,8 +38,14 @@ int configGetStat(config_set_t *configSet, iox_stat_t *stat);
 #include <libds34usb.h>
 #endif
 
+#include <libpad.h>
+#include <usbhdfsd-common.h>
+#include <libmc.h>
+#include <libcdvd-common.h>
+
 #ifdef __EESIO_DEBUG
 #include "SIOCookie.h"
+#include "include/debug.h"
 #define LOG_INIT() ee_sio_start(38400, 0, 0, 0, 0, 1)
 #define LOG_ENABLE() \
     do {             \
@@ -1316,7 +1313,6 @@ static void compatUpdate(item_list_t *support, unsigned char mode, config_set_t 
                                     clock.day = itob(stat.mtime[4]);
                                     clock.month = itob(stat.mtime[5]);
                                     clock.year = itob((stat.mtime[6] | ((unsigned short int)stat.mtime[7] << 8)) - 2000);
-                                    configConvertToGmtTime(&clock);
 
                                     mtime[0] = btoi(clock.year);      // Year
                                     mtime[1] = btoi(clock.month) - 1; // Month
