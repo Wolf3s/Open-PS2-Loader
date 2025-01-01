@@ -20,8 +20,8 @@
 #include <ps2ips.h>
 #include <ps2smb.h>
 
-#include "include/nbns.h"
-#include "httpclient.h"
+#include <libnbns.h>
+#include <libhttpclient.h>
 
 static char ethPrefix[40]; // Contains the full path to the folder where all the games are.
 static char *ethBase;

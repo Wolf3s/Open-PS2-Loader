@@ -1,7 +1,6 @@
 #define HTTP_CMODE_CLOSED     0
 #define HTTP_CMODE_PERSISTENT 1
 
-// EE-side only
 int HttpInit(void);
 void HttpDeinit(void);
 
@@ -59,12 +58,3 @@ struct HttpClientSendGetResult
     u8 padding;
     u16 out_len;
 };
-
-#ifdef _IOP
-#define httpc_IMPORTS_start DECLARE_IMPORT_TABLE(httpc, 1, 1)
-#define httpc_IMPORTS_end   END_IMPORT_TABLE
-
-#define I_HttpEstabConnection DECLARE_IMPORT(4, HttpEstabConnection)
-#define I_HttpCloseConnection DECLARE_IMPORT(5, HttpCloseConnection)
-#define I_HttpSendGetRequest  DECLARE_IMPORT(6, HttpSendGetRequest)
-#endif

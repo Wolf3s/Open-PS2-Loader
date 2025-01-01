@@ -73,7 +73,7 @@ endif
 
 FRONTEND_OBJS = pad.o xparam.o fntsys.o renderman.o submenu.o menu.o OSDHistory.o system.o lang.o lang_internal.o config.o hdd.o dialogs.o \
 		dia.o ioman.o texcache.o themes.o supportbase.o bdmsupport.o ethsupport.o hddsupport.o zso.o lz4.o \
-		appsupport.o gui.o guigame.o textures.o opl.o atlas.o nbns.o httpclient.o gsm.o cheatman.o sound.o ps2cnf.o
+		appsupport.o gui.o guigame.o textures.o opl.o atlas.o gsm.o cheatman.o sound.o ps2cnf.o
 
 IOP_OBJS =	iomanx.o filexio.o ps2fs.o usbd.o bdmevent.o \
 		bdm.o bdmfs_fatfs.o usbmass_bd.o iLinkman.o IEEE1394_bd.o mx4sio_bd.o \
@@ -83,7 +83,7 @@ IOP_OBJS =	iomanx.o filexio.o ps2fs.o usbd.o bdmevent.o \
 		httpclient-iop.o netman.o ps2ips.o \
 		bdm_mcemu.o hdd_mcemu.o smb_mcemu.o \
 		iremsndpatch.o apemodpatch.o f2techioppatch.o cleareffects.o resetspu.o \
-		libsd.o audsrv.o
+		libsd.o audsrv.o libnbns.a libhttpclient.a
 
 EECORE_OBJS = ee_core.o ioprp.o util.o \
 		udnl.o imgdrv.o eesync.o \
@@ -127,7 +127,7 @@ MAPFILE = opl.map
 EE_LDFLAGS += -Wl,-Map,$(MAPFILE)
 
 EE_LIBS = -L$(PS2SDK)/ports/lib -L$(GSKIT)/lib -L./lib -lgskit -ldmakit -lpoweroff -lfileXio -lpatches -lpng -lz -lmc -lfreetype -lvux -lcdvd -lnetman -lps2ips -laudsrv -lvorbisfile -lvorbis -logg -lpadx -lelf-loader-nocolour
-EE_INCS += -I$(PS2SDK)/ports/include -I$(PS2SDK)/ports/include/freetype2 -I$(GSKIT)/include -I$(GSKIT)/ee/dma/include -I$(GSKIT)/ee/gs/include -Imodules/iopcore/common -Imodules/network/common -Imodules/hdd/common -Iinclude
+EE_INCS += -I$(PS2SDK)/ports/include -I$(PS2SDK)/ports/include/freetype2 -I$(GSKIT)/include -I$(GSKIT)/ee/dma/include -I$(GSKIT)/ee/gs/include -Imodules/iopcore/common -Imodules/network/common -Imodules/hdd/common -Imodules/network/nbns/ee -Imodules/network/httpclient/ee -Iinclude
 BIN2C = $(PS2SDK)/bin/bin2c
 
 # WARNING: Only extra spaces are allowed and ignored at the beginning of the conditional directives (ifeq, ifneq, ifdef, ifndef, else and endif)
@@ -673,16 +673,28 @@ modules/debug/ps2link/ps2link.irx: modules/debug/ps2link
 $(EE_ASM_DIR)ps2link.c: modules/debug/ps2link/ps2link.irx | $(EE_ASM_DIR)
 	$(BIN2C) $< $@ $(*F)_irx
 
-modules/network/nbns/nbns.irx: modules/network/nbns
+$(EE_OBJS_DIR)libnbns.a: modules/network/nbns/ee/libnbns.a
+	cp $< $@
+
+modules/network/nbns/ee/libnbns.a: modules/network/nbns/ee
 	$(MAKE) -C $<
 
-$(EE_ASM_DIR)nbns-iop.c: modules/network/nbns/nbns.irx | $(EE_ASM_DIR)
+modules/network/nbns/iop/nbns.irx: modules/network/nbns/iop
+	$(MAKE) -C $<
+
+$(EE_ASM_DIR)nbns-iop.c: modules/network/nbns/iop/nbns.irx | $(EE_ASM_DIR)
 	$(BIN2C) $< $@ nbns_irx
 
-modules/network/httpclient/httpclient.irx: modules/network/httpclient
+$(EE_OBJS_DIR)libhttpclient.a: modules/network/httpclient/ee/libhttpclient.a
+	cp $< $@
+
+modules/network/httpclient/ee/libhttpclient.a: modules/network/httpclient/ee
 	$(MAKE) -C $<
 
-$(EE_ASM_DIR)httpclient-iop.c: modules/network/httpclient/httpclient.irx | $(EE_ASM_DIR)
+modules/network/httpclient/iop/httpclient.irx:  modules/network/httpclient/iop
+	$(MAKE) -C $<
+
+$(EE_ASM_DIR)httpclient-iop.c: modules/network/httpclient/iop/httpclient.irx | $(EE_ASM_DIR)
 	$(BIN2C) $< $@ httpclient_irx
 
 $(EE_ASM_DIR)iomanx.c: $(PS2SDK)/iop/irx/iomanX.irx | $(EE_ASM_DIR)

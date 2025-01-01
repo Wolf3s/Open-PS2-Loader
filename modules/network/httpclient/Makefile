@@ -1,8 +1,11 @@
-IOP_BIN = httpclient.irx
-IOP_OBJS = main.o httpclient.o imports.o exports.o
+all:
+	$(MAKE) -C iop
+	$(MAKE) -C ee
 
-IOP_INCS += -I../common
+clean:
+	$(MAKE) -C iop	clean
+	$(MAKE) -C ee	clean
 
-include $(PS2SDK)/Defs.make
-include ../../Rules.bin.make
-include $(PS2SDK)/samples/Makefile.iopglobal
+rebuild:
+	$(MAKE) -C iop	rebuild
+	$(MAKE) -C ee	rebuild

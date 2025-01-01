@@ -18,7 +18,6 @@
 #include "include/util.h"
 #include "include/compatupd.h"
 #include "include/imports.h"
-#include "httpclient.h"
 #include "include/ethsupport.h"
 #include "include/appsupport.h"
 
@@ -31,6 +30,7 @@
 #define NEWLIB_PORT_AWARE
 #include <fileXio_rpc.h> // iox_stat_t
 int configGetStat(config_set_t *configSet, iox_stat_t *stat);
+#include <libhttpclient.h>
 
 #include <unistd.h>
 #ifdef PADEMU
