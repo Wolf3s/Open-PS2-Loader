@@ -8,10 +8,10 @@
 #include "include/textures.h"
 #include "include/ioman.h"
 #include "include/system.h"
-#include "include/extern_irx.h"
+#include "include/imports.h"
 #include "include/cheatman.h"
 #include "modules/iopcore/common/cdvd_config.h"
-#include "ethsupport.h"
+#include "include/ethsupport.h"
 
 #define NEWLIB_PORT_AWARE
 #include <fileXio_rpc.h> // fileXioDevctl(ethBase, SMB_***)

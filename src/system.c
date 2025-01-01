@@ -10,6 +10,7 @@
 
 #include "include/opl.h"
 #include "include/gui.h"
+#include "include/ethsupport.h"
 #include "include/util.h"
 #include "include/pad.h"
 #include "include/mcemu.h"
@@ -18,12 +19,11 @@
 #include "include/ioprp.h"
 #include "include/OSDHistory.h"
 #include "include/renderman.h"
-#include "include/extern_irx.h"
+#include "include/imports.h"
 #include "../ee_core/include/modules.h"
 #include "include/pggsm.h"
 #include "include/cheatman.h"
 #include "include/xparam.h"
-#include "ethsupport.h"
 
 #ifdef PADEMU
 #include <libds34bt.h>

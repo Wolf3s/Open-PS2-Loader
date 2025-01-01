@@ -17,10 +17,10 @@
 #include "include/config.h"
 #include "include/util.h"
 #include "include/compatupd.h"
-#include "include/extern_irx.h"
+#include "include/imports.h"
 #include "httpclient.h"
-#include "ethsupport.h"
-#include "appsupport.h"
+#include "include/ethsupport.h"
+#include "include/appsupport.h"
 
 #include "include/cheatman.h"
 #include "include/sound.h"
