@@ -37,6 +37,19 @@ typedef struct
     u8 unknown2[10];                // Always zero
 } USBExtreme_game_entry_t;
 
+typedef struct
+{
+    int fd;
+    int mode;
+    char *buffer;
+    unsigned int size;
+    unsigned int available;
+    char *lastPtr;
+    short allocResult;
+} file_buffer_t;
+
+extern base_game_info_t *gAutoLaunchBDMGame;
+
 int isValidIsoName(char *name, int *pNameLen);
 int sbIsSameSize(const char *prefix, int prevSize);
 int sbCreateSemaphore(void);
@@ -56,5 +69,33 @@ int sbProbeISO9660(const char *path, base_game_info_t *game, u32 layer1_offset);
 int sbProbeISO9660_64(const char *path, base_game_info_t *game, u32 layer1_offset);
 
 int sbLoadCheats(const char *path, const char *file);
+
+/* TODO For later: put this well organized */
+
+int sbGetmcID(void);
+
+int sbGetFileSize(int fd);
+
+void sbCheckMCFolder(void);
+
+int sbOpenFile(char *path, int mode);
+
+void *sbReadFile(char *path, int align, int *size);
+
+int sbListDir(char *path, const char *separator, int maxElem, int (*readEntry)(int index, const char *path, const char *separator, const char *name, unsigned char d_type));
+
+/* size will be the maximum line size possible */
+file_buffer_t *sbOpenFileBuffer(char *fpath, int mode, short allocResult, unsigned int size);
+
+/* size will be the maximum line size possible */
+file_buffer_t *sbOpenFileBufferBuffer(short allocResult, const void *buffer, unsigned int size);
+
+int sbReadFileBuffer(file_buffer_t *fileBuffer, char **outBuf);
+
+void sbWriteFileBuffer(file_buffer_t *fileBuffer, char *inBuf, int size);
+
+void sbCloseFileBuffer(file_buffer_t *fileBuffer);
+
+int sbDeleteFolder(const char *folder);
 
 #endif
