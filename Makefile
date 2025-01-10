@@ -1,10 +1,10 @@
-VERSION = 1
-SUBVERSION = 2
+VERSION = 0
+SUBVERSION = 0
 PATCHLEVEL = 0
-EXTRAVERSION = Beta
+EXTRAVERSION = WIP
 
 # How to DEBUG?
-# Simply type "make <debug mode>" to build OPL with the necessary debugging functionality.
+# Simply type "make <debug mode>" to build wOPL with the necessary debugging functionality.
 # Debug modes:
 #	debug		    	 -	UI-side debug mode (UDPTTY)
 #	iopcore_debug		 -	UI-side + iopcore debug mode (UDPTTY).
@@ -36,7 +36,7 @@ IGS ?= $(EXTRA_FEATURES)
 #Enables/disables pad emulator
 PADEMU ?= 1
 
-#Enables/disables building of an edition of OPL that will support the DTL-T10000 (SDK v2.3+)
+#Enables/disables building of an edition of wOPL that will support the DTL-T10000 (SDK v2.3+)
 DTL_T10000 ?= 0
 
 #Nor stripping neither compressing binary ELF after compiling.
@@ -51,7 +51,7 @@ DECI2_DEBUG ?= 0
 TTY_APPROACH ?= UDP
 
 # ======== DO NOT MODIFY VALUES AFTER THIS POINT! UNLESS YOU KNOW WHAT YOU ARE DOING ========
-REVISION = $(shell expr $(shell git rev-list --count HEAD) + 2)
+REVISION = $(shell expr $(shell git rev-list --count HEAD) - 2195)
 
 GIT_HASH = $(shell git rev-parse --short=7 HEAD 2>/dev/null)
 ifeq ($(shell git diff --quiet; echo $$?),1)
@@ -62,12 +62,12 @@ ifneq ($(shell test -d .git; echo $$?),0)
 endif
 
 GIT_TAG = $(shell git describe --exact-match --tags 2>/dev/null)
-OPL_VERSION = v$(VERSION).$(SUBVERSION).$(PATCHLEVEL)$(if $(EXTRAVERSION),-$(EXTRAVERSION))-$(REVISION)$(if $(GIT_HASH),-$(GIT_HASH))$(if $(DIRTY),$(DIRTY))$(if $(LOCALVERSION),-$(LOCALVERSION))
+WOPL_VERSION = v$(VERSION).$(SUBVERSION).$(PATCHLEVEL)$(if $(EXTRAVERSION),-$(EXTRAVERSION))-$(REVISION)$(if $(GIT_HASH),-$(GIT_HASH))$(if $(DIRTY),$(DIRTY))$(if $(LOCALVERSION),-$(LOCALVERSION))
 
 ifneq ($(GIT_TAG),)
 ifneq ($(GIT_TAG),latest)
 	# git revision is tagged
-	OPL_VERSION = $(GIT_TAG)$(if $(DIRTY),$(DIRTY))
+	WOPL_VERSION = $(GIT_TAG)$(if $(DIRTY),$(DIRTY))
 endif
 endif
 
@@ -111,10 +111,10 @@ TRANSLATIONS = Albanian Arabic Bulgarian Cebuano Croatian Czech Danish Dutch Fil
 	German Greek Hungarian Indonesian Italian Japanese Korean Laotian Persian Polish Portuguese \
 	Portuguese_BR Romana Russian Ryukyuan SChinese Spanish Swedish TChinese Turkish Vietnamese
 
-EE_BIN = opl.elf
-EE_BIN_STRIPPED = opl_stripped.elf
-EE_BIN_PACKED = OPNPS2LD.ELF
-EE_VPKD = OPNPS2LD-$(OPL_VERSION)
+EE_BIN = wopl.elf
+EE_BIN_STRIPPED = wopl_stripped.elf
+EE_BIN_PACKED = WOPNPS2LD.ELF
+EE_VPKD = WOPNPS2LD-$(WOPL_VERSION)
 EE_SRC_DIR = src/
 EE_OBJS_DIR = obj/
 EE_ASM_DIR = asm/
@@ -123,7 +123,7 @@ LNG_TMPL_DIR = lng_tmpl/
 LNG_DIR = lng/
 PNG_ASSETS_DIR = gfx/
 
-MAPFILE = opl.map
+MAPFILE = wopl.map
 EE_LDFLAGS += -Wl,-Map,$(MAPFILE)
 
 EE_LIBS = -L$(PS2SDK)/ports/lib -L$(GSKIT)/lib -L./lib -lgskit -ldmakit -lpoweroff -lfileXio -lpatches -lpng -lz -lmc -lfreetype -lvux -lcdvd -lnetman -lps2ips -laudsrv -lvorbisfile -lvorbis -logg -lpadx -lelf-loader-nocolour
@@ -211,7 +211,7 @@ else
   SMSTCPIP_INGAME_CFLAGS = INGAME_DRIVER=1
 endif
 
-EE_CFLAGS += -fsingle-precision-constant -DOPL_VERSION=\"$(OPL_VERSION)\"
+EE_CFLAGS += -fsingle-precision-constant -DWOPL_VERSION=\"$(WOPL_VERSION)\"
 
 # There are a few places where the config key/value are truncated, so disable these warnings
 EE_CFLAGS += -Wno-format-truncation -Wno-stringop-truncation
@@ -232,7 +232,7 @@ EE_LDFLAGS += -fdata-sections -ffunction-sections -Wl,--gc-sections
 ifdef PS2SDK
 
 all: download_lng download_lwNBD languages
-	echo "Building Open PS2 Loader $(OPL_VERSION)..."
+	echo "Building Open PS2 Loader $(wOPL_VERSION)..."
 	echo "-Interface"
 ifneq ($(NOT_PACKED),1)
 	$(MAKE) $(EE_BIN_PACKED)
@@ -820,8 +820,8 @@ ps2sdk-not-setup:
 	@echo "PS2SDK is not setup. Please setup PS2SDK before building this project"
 endif
 
-oplversion:
-	@echo $(OPL_VERSION)
+woplversion:
+	@echo $(wOPL_VERSION)
 
 ifdef PS2SDK
 include $(PS2SDK)/samples/Makefile.pref
