@@ -54,13 +54,13 @@
 #define IO_COMPAT_UPDATE_DEFFERED 4
 
 // Codes have been planned to fit the design of the GUI functions within gui.c.
-#define OPL_COMPAT_UPDATE_STAT_WIP        0
-#define OPL_COMPAT_UPDATE_STAT_DONE       1
-#define OPL_COMPAT_UPDATE_STAT_ERROR      -1
-#define OPL_COMPAT_UPDATE_STAT_CONN_ERROR -2
-#define OPL_COMPAT_UPDATE_STAT_ABORTED    -3
+#define WOPL_COMPAT_UPDATE_STAT_WIP        0
+#define WOPL_COMPAT_UPDATE_STAT_DONE       1
+#define WOPL_COMPAT_UPDATE_STAT_ERROR      -1
+#define WOPL_COMPAT_UPDATE_STAT_CONN_ERROR -2
+#define WOPL_COMPAT_UPDATE_STAT_ABORTED    -3
 
-#define OPL_VMODE_CHANGE_CONFIRMATION_TIMEOUT_MS 10000
+#define WOPL_VMODE_CHANGE_CONFIRMATION_TIMEOUT_MS 10000
 
 int oplPath2Mode(const char *path);
 int oplGetAppImage(const char *device, char *folder, int isRelative, char *value, char *suffix, GSTEXTURE *resultTex, short psm);

@@ -3,7 +3,7 @@
 
 // Enum for the different types of config files. Game-specific config files (<game ID>.cfg) will always have an ID of 0.
 enum CONFIG_INDEX {
-    CONFIG_INDEX_OPL = 0,
+    CONFIG_INDEX_WOPL = 0,
     CONFIG_INDEX_LAST,
     CONFIG_INDEX_APPS,
     CONFIG_INDEX_NETWORK,
@@ -13,7 +13,7 @@ enum CONFIG_INDEX {
 };
 
 // Config type bits
-#define CONFIG_OPL     (1 << CONFIG_INDEX_OPL)
+#define CONFIG_WOPL    (1 << CONFIG_INDEX_WOPL)
 #define CONFIG_LAST    (1 << CONFIG_INDEX_LAST)
 #define CONFIG_APPS    (1 << CONFIG_INDEX_APPS)
 #define CONFIG_NETWORK (1 << CONFIG_INDEX_NETWORK)

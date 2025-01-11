@@ -588,7 +588,7 @@ config_set_t *oplGetLegacyAppsConfig(void)
     config_set_t *appConfig;
     char appsPath[128];
 
-    snprintf(appsPath, sizeof(appsPath), "mc?:OPL/conf_apps.cfg");
+    snprintf(appsPath, sizeof(appsPath), "mc?:WOPL/conf_apps.cfg");
     fd = openFile(appsPath, O_RDONLY);
     if (fd >= 0) {
         appConfig = configAlloc(CONFIG_APPS, NULL, appsPath);
@@ -780,11 +780,11 @@ static int checkLoadConfigBDM(int types)
     int value;
 
     // check USB
-    if (bdmFindPartition(path, "conf_opl.cfg", 0)) {
+    if (bdmFindPartition(path, "conf_wopl.cfg", 0)) {
         configEnd();
         configInit(path);
         value = configReadMulti(types);
-        config_set_t *configOPL = configGetByType(CONFIG_OPL);
+        config_set_t *configOPL = configGetByType(CONFIG_WOPL);
         configSetInt(configOPL, CONFIG_OPL_BDM_MODE, START_MODE_AUTO);
         return value;
     }
@@ -800,14 +800,14 @@ static int checkLoadConfigHDD(int types)
     hddLoadModules();
     hddLoadSupportModules();
 
-    snprintf(path, sizeof(path), "%sconf_opl.cfg", gHDDPrefix);
+    snprintf(path, sizeof(path), "%sconf_wopl.cfg", gHDDPrefix);
     value = open(path, O_RDONLY);
     if (value >= 0) {
         close(value);
         configEnd();
         configInit(gHDDPrefix);
         value = configReadMulti(types);
-        config_set_t *configOPL = configGetByType(CONFIG_OPL);
+        config_set_t *configOPL = configGetByType(CONFIG_WOPL);
         configSetInt(configOPL, CONFIG_OPL_HDD_MODE, START_MODE_AUTO);
         return value;
     }
@@ -875,13 +875,13 @@ static void _loadConfig()
     const char *temp;
     int result = configReadMulti(lscstatus);
 
-    if (lscstatus & CONFIG_OPL) {
-        if (!(result & CONFIG_OPL)) {
+    if (lscstatus & CONFIG_WOPL) {
+        if (!(result & CONFIG_WOPL)) {
             result = tryAlternateDevice(lscstatus);
         }
 
-        if (result & CONFIG_OPL) {
-            config_set_t *configOPL = configGetByType(CONFIG_OPL);
+        if (result & CONFIG_WOPL) {
+            config_set_t *configOPL = configGetByType(CONFIG_WOPL);
 
             configGetInt(configOPL, CONFIG_OPL_SCROLLING, &gScrollSpeed);
             configGetColor(configOPL, CONFIG_OPL_BGCOLOR, gDefaultBgColor);
@@ -997,7 +997,7 @@ static int trySaveConfigBDM(int types)
     char path[64];
 
     // check USB
-    if (bdmFindPartition(path, "conf_opl.cfg", 1)) {
+    if (bdmFindPartition(path, "conf_wopl.cfg", 1)) {
         configSetMove(path);
         return configWriteMulti(types);
     }
@@ -1060,8 +1060,8 @@ static void _saveConfig()
 {
     char temp[256];
 
-    if (lscstatus & CONFIG_OPL) {
-        config_set_t *configOPL = configGetByType(CONFIG_OPL);
+    if (lscstatus & CONFIG_WOPL) {
+        config_set_t *configOPL = configGetByType(CONFIG_WOPL);
         configSetInt(configOPL, CONFIG_OPL_SCROLLING, gScrollSpeed);
         configSetStr(configOPL, CONFIG_OPL_THEME, thmGetValue());
         configSetStr(configOPL, CONFIG_OPL_LANGUAGE, lngGetValue());
@@ -1240,8 +1240,8 @@ static int CompatAttemptConnection(void)
     unsigned char retries;
     int HttpSocket;
 
-    for (retries = OPL_COMPAT_HTTP_RETRIES, HttpSocket = -1; !CompatUpdateStopFlag && retries > 0; retries--) {
-        if ((HttpSocket = HttpEstabConnection(OPL_COMPAT_HTTP_HOST, OPL_COMPAT_HTTP_PORT)) >= 0) {
+    for (retries = WOPL_COMPAT_HTTP_RETRIES, HttpSocket = -1; !CompatUpdateStopFlag && retries > 0; retries--) {
+        if ((HttpSocket = HttpEstabConnection(WOPL_COMPAT_HTTP_HOST, WOPL_COMPAT_HTTP_PORT)) >= 0) {
             break;
         }
     }
@@ -1279,7 +1279,7 @@ static void compatUpdate(item_list_t *support, unsigned char mode, config_set_t 
 
     if (device < 0) {
         LOG("CompatUpdate: unrecognized mode: %d\n", support->mode);
-        CompatUpdateStatus = OPL_COMPAT_UPDATE_STAT_ERROR;
+        CompatUpdateStatus = WOPL_COMPAT_UPDATE_STAT_ERROR;
         return; // Shouldn't happen, but what if?
     }
 
@@ -1339,10 +1339,10 @@ static void compatUpdate(item_list_t *support, unsigned char mode, config_set_t 
                                 hasMtime = 0;
                             }
 
-                            sprintf(uri, OPL_COMPAT_HTTP_URI, startup, device);
-                            for (retries = OPL_COMPAT_HTTP_RETRIES; !CompatUpdateStopFlag && retries > 0; retries--) {
+                            sprintf(uri, WOPL_COMPAT_HTTP_URI, startup, device);
+                            for (retries = WOPL_COMPAT_HTTP_RETRIES; !CompatUpdateStopFlag && retries > 0; retries--) {
                                 length = HTTP_IOBUF_SIZE;
-                                result = HttpSendGetRequest(HttpSocket, OPL_USER_AGENT, OPL_COMPAT_HTTP_HOST, &ConnMode, hasMtime ? mtime : NULL, uri, HttpBuffer, &length);
+                                result = HttpSendGetRequest(HttpSocket, WOPL_USER_AGENT, WOPL_COMPAT_HTTP_HOST, &ConnMode, hasMtime ? mtime : NULL, uri, HttpBuffer, &length);
                                 if (result >= 0) {
                                     if (result == 200) {
                                         if ((downloadedConfig = configAlloc(0, NULL, NULL)) != NULL) {
@@ -1401,12 +1401,12 @@ static void compatUpdate(item_list_t *support, unsigned char mode, config_set_t 
     }
 
     if (CompatUpdateStopFlag)
-        CompatUpdateStatus = OPL_COMPAT_UPDATE_STAT_ABORTED;
+        CompatUpdateStatus = WOPL_COMPAT_UPDATE_STAT_ABORTED;
     else {
         if (result >= 0)
-            CompatUpdateStatus = OPL_COMPAT_UPDATE_STAT_DONE;
+            CompatUpdateStatus = WOPL_COMPAT_UPDATE_STAT_DONE;
         else {
-            CompatUpdateStatus = (result & EOPLCONNERR) ? OPL_COMPAT_UPDATE_STAT_CONN_ERROR : OPL_COMPAT_UPDATE_STAT_ERROR;
+            CompatUpdateStatus = (result & EOPLCONNERR) ? WOPL_COMPAT_UPDATE_STAT_CONN_ERROR : WOPL_COMPAT_UPDATE_STAT_ERROR;
         }
     }
     LOG("CompatUpdate: completed with status %d\n", CompatUpdateStatus);
@@ -1440,7 +1440,7 @@ void oplUpdateGameCompat(int UpdateAll)
     CompatUpdateComplete = 0;
     CompatUpdateStopFlag = 0;
     CompatUpdateFlags = UpdateAll ? (COMPAT_UPD_MODE_NO_MTIME | COMPAT_UPD_MODE_UPD_USR) : 0;
-    CompatUpdateStatus = OPL_COMPAT_UPDATE_STAT_WIP;
+    CompatUpdateStatus = WOPL_COMPAT_UPDATE_STAT_WIP;
 
     // Schedule compatibility updates of all the list handlers
     for (i = 0, started = 0; i < MODE_COUNT; i++) {
@@ -1454,7 +1454,7 @@ void oplUpdateGameCompat(int UpdateAll)
     }
 
     if (started < 1) // Nothing done
-        CompatUpdateStatus = OPL_COMPAT_UPDATE_STAT_DONE;
+        CompatUpdateStatus = WOPL_COMPAT_UPDATE_STAT_DONE;
 }
 
 static int CompatUpdSingleID, CompatUpdSingleStatus;
@@ -1470,7 +1470,7 @@ static void _updateCompatSingle(void)
 int oplUpdateGameCompatSingle(int id, item_list_t *support, config_set_t *configSet)
 {
     CompatUpdateStopFlag = 0;
-    CompatUpdateStatus = OPL_COMPAT_UPDATE_STAT_WIP;
+    CompatUpdateStatus = WOPL_COMPAT_UPDATE_STAT_WIP;
     CompatUpdateTotal = 1;
     CompatUpdateComplete = 0;
     CompatUpdSingleID = id;
@@ -1670,7 +1670,7 @@ static void setDefaults(void)
     gAutoLaunchDeviceData = NULL;
     gOPLPart[0] = '\0';
     gHDDPrefix = "pfs0:";
-    gBaseMCDir = "mc?:OPL";
+    gBaseMCDir = "mc?:WOPL";
 
     bdmCacheSize = 16;
     hddCacheSize = 8;
@@ -1793,7 +1793,7 @@ static void init(void)
     if (!getKeyPressed(KEY_START)) {
         _loadConfig(); // only try to restore config if emergency key is not being pressed
     } else {
-        LOG("--- SKIPPING OPL CONFIG LOADING\n");
+        LOG("--- SKIPPING wOPL CONFIG LOADING\n");
         applyConfig(-1, -1, 0);
     }
 
@@ -1859,16 +1859,16 @@ static void miniInit(int mode)
     InitConsoleRegionData();
 
     ret = configReadMulti(CONFIG_ALL);
-    if (CONFIG_ALL & CONFIG_OPL) {
-        if (!(ret & CONFIG_OPL)) {
+    if (CONFIG_ALL & CONFIG_WOPL) {
+        if (!(ret & CONFIG_WOPL)) {
             if (mode == BDM_MODE)
                 ret = checkLoadConfigBDM(CONFIG_ALL);
             else if (mode == HDD_MODE)
                 ret = checkLoadConfigHDD(CONFIG_ALL);
         }
 
-        if (ret & CONFIG_OPL) {
-            config_set_t *configOPL = configGetByType(CONFIG_OPL);
+        if (ret & CONFIG_WOPL) {
+            config_set_t *configOPL = configGetByType(CONFIG_WOPL);
 
             configGetInt(configOPL, CONFIG_OPL_PS2LOGO, &gPS2Logo);
             configGetStrCopy(configOPL, CONFIG_OPL_EXIT_PATH, gExitPath, sizeof(gExitPath));
@@ -2008,7 +2008,7 @@ int main(int argc, char *argv[])
 #endif
 
     LOG_INIT();
-    PREINIT_LOG("OPL GUI start!\n");
+    PREINIT_LOG("wOPL GUI start!\n");
 
     ChangeThreadPriority(GetThreadId(), 31);
 
@@ -2020,7 +2020,7 @@ int main(int argc, char *argv[])
         /* argv[0] boot path
            argv[1] game->startup
            argv[2] str to u32 game->start_sector
-           argv[3] opl partition read from hdd0:__common/OPL/conf_hdd.cfg
+           argv[3] opl partition read from hdd0:__common/WOPL/conf_hdd.cfg
            argv[4] "mini" */
         if (!strcmp(argv[4], "mini"))
             autoLaunchHDDGame(argv);

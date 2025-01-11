@@ -101,7 +101,7 @@ void appInit(item_list_t *itemList)
 {
     LOG("APPSUPPORT Init\n");
     appForceUpdate = 1;
-    configGetInt(configGetByType(CONFIG_OPL), "app_frames_delay", &appItemList.delay);
+    configGetInt(configGetByType(CONFIG_WOPL), "app_frames_delay", &appItemList.delay);
     configApps = oplGetLegacyAppsConfig();
     appsList = NULL;
     appItemList.enabled = 1;

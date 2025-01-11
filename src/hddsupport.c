@@ -19,7 +19,7 @@
 
 #include <hdd-ioctl.h>
 
-#define OPL_HDD_MODE_PS2LOGO_OFFSET 0x17F8
+#define WOPL_HDD_MODE_PS2LOGO_OFFSET 0x17F8
 
 #include "../modules/isofs/zso.h"
 
@@ -99,12 +99,12 @@ static int hddCheckHDProKit(void)
 #define PFS_ZONE_SIZE 8192
 #define PFS_FRAGMENT  0x00000000
 
-static void hddCheckOPLFolder(const char *mountPoint)
+static void hddCheckWOPLFolder(const char *mountPoint)
 {
     DIR *dir;
     char path[32];
 
-    sprintf(path, "%sOPL", mountPoint);
+    sprintf(path, "%sWOPL", mountPoint);
 
     dir = opendir(path);
     if (dir == NULL)
@@ -113,7 +113,7 @@ static void hddCheckOPLFolder(const char *mountPoint)
         closedir(dir);
 }
 
-static void hddFindOPLPartition(void)
+static void hddFindWOPLPartition(void)
 {
     static config_set_t *config;
     char name[64];
@@ -123,9 +123,9 @@ static void hddFindOPLPartition(void)
 
     ret = fileXioMount("pfs0:", "hdd0:__common", FIO_MT_RDWR);
     if (ret == 0) {
-        fd = open("pfs0:OPL/conf_hdd.cfg", O_RDONLY);
+        fd = open("pfs0:WOPL/conf_hdd.cfg", O_RDONLY);
         if (fd >= 0) {
-            config = configAlloc(0, NULL, "pfs0:OPL/conf_hdd.cfg");
+            config = configAlloc(0, NULL, "pfs0:WOPL/conf_hdd.cfg");
             configRead(config);
 
             configGetStrCopy(config, "hdd_partition", name, sizeof(name));
@@ -137,14 +137,14 @@ static void hddFindOPLPartition(void)
             return;
         }
 
-        hddCheckOPLFolder(hddPrefix);
+        hddCheckWOPLFolder(hddPrefix);
 
-        fd = open("pfs0:OPL/conf_hdd.cfg", O_CREAT | O_TRUNC | O_WRONLY);
+        fd = open("pfs0:WOPL/conf_hdd.cfg", O_CREAT | O_TRUNC | O_WRONLY);
         if (fd >= 0) {
             config = configAlloc(0, NULL, "pfs0:OPL/conf_hdd.cfg");
             configRead(config);
 
-            configSetStr(config, "hdd_partition", "+OPL");
+            configSetStr(config, "hdd_partition", "+WOPL");
             configWrite(config);
 
             configFree(config);
@@ -152,7 +152,7 @@ static void hddFindOPLPartition(void)
         }
     }
 
-    snprintf(gOPLPart, sizeof(gOPLPart), "hdd0:+OPL");
+    snprintf(gOPLPart, sizeof(gOPLPart), "hdd0:+WOPL");
 
     return;
 }
@@ -316,7 +316,7 @@ void hddLoadSupportModules(void)
         LOG("HDDSUPPORT modules loaded\n");
 
         if (gOPLPart[0] == '\0')
-            hddFindOPLPartition();
+            hddFindWOPLPartition();
 
         fileXioUmount(hddPrefix);
 
@@ -328,8 +328,8 @@ void hddLoadSupportModules(void)
         }
 
         if (gOPLPart[5] != '+') {
-            hddCheckOPLFolder(hddPrefix);
-            gHDDPrefix = "pfs0:OPL/";
+            hddCheckWOPLFolder(hddPrefix);
+            gHDDPrefix = "pfs0:WOPL/";
         }
     }
 }
@@ -338,7 +338,7 @@ void hddInit(item_list_t *itemList)
 {
     LOG("HDDSUPPORT Init\n");
     hddForceUpdate = 0; // Use cache at initial startup.
-    configGetInt(configGetByType(CONFIG_OPL), "hdd_frames_delay", &hddGameList.delay);
+    configGetInt(configGetByType(CONFIG_WOPL), "hdd_frames_delay", &hddGameList.delay);
     ioPutRequest(IO_CUSTOM_SIMPLEACTION, &hddInitModules);
     hddGameList.enabled = 1;
 }
@@ -570,14 +570,14 @@ void hddLaunchGame(item_list_t *itemList, int id, config_set_t *configSet)
         strcpy(filename, game->startup);
 
     if (gPS2Logo)
-        EnablePS2Logo = CheckPS2Logo(0, game->start_sector + OPL_HDD_MODE_PS2LOGO_OFFSET);
+        EnablePS2Logo = CheckPS2Logo(0, game->start_sector + WOPL_HDD_MODE_PS2LOGO_OFFSET);
 
     // Check for ZSO to correctly adjust layer1 start
     settings->common.layer1_start = 0; // cdvdman will read it from APA header
-    hddReadSectors(game->start_sector + OPL_HDD_MODE_PS2LOGO_OFFSET, 1, IOBuffer);
+    hddReadSectors(game->start_sector + WOPL_HDD_MODE_PS2LOGO_OFFSET, 1, IOBuffer);
     if (*(u32 *)IOBuffer == ZSO_MAGIC) {
         probed_fd = 0;
-        probed_lba = game->start_sector + OPL_HDD_MODE_PS2LOGO_OFFSET;
+        probed_lba = game->start_sector + WOPL_HDD_MODE_PS2LOGO_OFFSET;
         ziso_init((ZISO_header *)IOBuffer, *(u32 *)((u8 *)IOBuffer + sizeof(ZISO_header)));
         ziso_read_sector(IOBuffer, 16, 1);
         u32 maxLBA = *(u32 *)(IOBuffer + 80);

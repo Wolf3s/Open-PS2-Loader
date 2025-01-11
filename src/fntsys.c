@@ -456,7 +456,7 @@ void fntUpdateAspectRatio()
     for (i = 0; i < FNT_MAX_COUNT; i++) {
         if (fonts[i].isValid) {
             fntCacheFlush(&fonts[i]);
-            // TODO: this seems correct, but the rest of the OPL UI (i.e. spacers) doesn't seem to be correctly scaled.
+            // TODO: this seems correct, but the rest of the wOPL UI (i.e. spacers) doesn't seem to be correctly scaled.
             FT_Set_Char_Size(fonts[i].face, fonts[i].fontSize * 64, fonts[i].fontSize * 64, fDPI * ws, fDPI * hs);
         }
     }

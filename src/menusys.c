@@ -805,7 +805,7 @@ int menuCheckParentalLock(void)
 
     result = 0; // Default to unlocked.
     if (parentalLockCheckEnabled) {
-        config_set_t *configOPL = configGetByType(CONFIG_OPL);
+        config_set_t *configOPL = configGetByType(CONFIG_WOPL);
 
         // Prompt for password, only if one was set.
         if (configGetStr(configOPL, CONFIG_OPL_PARENTAL_LOCK_PWD, &parentalLockPassword) && (parentalLockPassword[0] != '\0')) {
@@ -818,7 +818,7 @@ int menuCheckParentalLock(void)
                     guiMsgBox(_l(_STR_PARENLOCK_DISABLE_WARNING), 0, NULL);
 
                     configRemoveKey(configOPL, CONFIG_OPL_PARENTAL_LOCK_PWD);
-                    saveConfig(CONFIG_OPL, 1);
+                    saveConfig(CONFIG_WOPL, 1);
 
                     result = 0;
                     parentalLockCheckEnabled = 0; // Stop asking for the password.
@@ -901,7 +901,7 @@ void menuHandleInputMenu()
                 guiGameSavePadEmuGlobalConfig(configGetByType(CONFIG_GAME));
                 guiGameSavePadMacroGlobalConfig(configGetByType(CONFIG_GAME));
 #endif
-                saveConfig(CONFIG_OPL | CONFIG_NETWORK | CONFIG_GAME, 1);
+                saveConfig(CONFIG_WOPL | CONFIG_NETWORK | CONFIG_GAME, 1);
                 menuSetParentalLockCheckState(1); // Re-enable parental lock check.
             }
         } else if (id == MENU_EXIT) {

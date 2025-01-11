@@ -143,7 +143,7 @@ void bdmInit(item_list_t *itemList)
     pDeviceData->bdmModifiedDVDPrev = 0;
     pDeviceData->bdmGameCount = 0;
     pDeviceData->bdmGames = NULL;
-    configGetInt(configGetByType(CONFIG_OPL), "usb_frames_delay", &itemList->delay);
+    configGetInt(configGetByType(CONFIG_WOPL), "usb_frames_delay", &itemList->delay);
     itemList->enabled = 1;
 }
 

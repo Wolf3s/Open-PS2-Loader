@@ -323,7 +323,7 @@ static int guiNetCompatUpdRefresh(int modified)
     int result;
     unsigned int done, total;
 
-    if ((result = oplGetUpdateGameCompatStatus(&done, &total)) == OPL_COMPAT_UPDATE_STAT_WIP) {
+    if ((result = oplGetUpdateGameCompatStatus(&done, &total)) == WOPL_COMPAT_UPDATE_STAT_WIP) {
         diaSetInt(diaNetCompatUpdate, NETUPD_PROGRESS, (done == 0 || total == 0) ? 0 : (int)((float)done / total * 100.0f));
     }
 
@@ -333,19 +333,19 @@ static int guiNetCompatUpdRefresh(int modified)
 static void guiShowNetCompatUpdateResult(int result)
 {
     switch (result) {
-        case OPL_COMPAT_UPDATE_STAT_DONE:
+        case WOPL_COMPAT_UPDATE_STAT_DONE:
             // Completed with no errors.
             guiMsgBox(_l(_STR_NET_UPDATE_DONE), 0, NULL);
             break;
-        case OPL_COMPAT_UPDATE_STAT_ERROR:
+        case WOPL_COMPAT_UPDATE_STAT_ERROR:
             // Completed with errors.
             guiMsgBox(_l(_STR_NET_UPDATE_FAILED), 0, NULL);
             break;
-        case OPL_COMPAT_UPDATE_STAT_CONN_ERROR:
+        case WOPL_COMPAT_UPDATE_STAT_CONN_ERROR:
             // Completed with errors.
             guiMsgBox(_l(_STR_NET_UPDATE_CONN_FAILED), 0, NULL);
             break;
-        case OPL_COMPAT_UPDATE_STAT_ABORTED:
+        case WOPL_COMPAT_UPDATE_STAT_ABORTED:
             // User-aborted.
             guiMsgBox(_l(_STR_NET_UPDATE_CANCELLED), 0, NULL);
             break;
@@ -427,7 +427,7 @@ void guiShowNetCompatUpdateSingle(int id, item_list_t *support, config_set_t *co
         guiRenderTextScreen(_l(_STR_PLEASE_WAIT));
 
         if ((ethLoadInitModules()) == 0) {
-            if ((result = oplUpdateGameCompatSingle(id, support, configSet)) == OPL_COMPAT_UPDATE_STAT_DONE) {
+            if ((result = oplUpdateGameCompatSingle(id, support, configSet)) == WOPL_COMPAT_UPDATE_STAT_DONE) {
                 configSetInt(configSet, CONFIG_ITEM_CONFIGSOURCE, CONFIG_SOURCE_DLOAD);
             }
             guiShowNetCompatUpdateResult(result);
@@ -847,7 +847,7 @@ void guiShowParentalLockConfig(void)
 {
     int result;
     char password[CONFIG_KEY_VALUE_LEN];
-    config_set_t *configOPL = configGetByType(CONFIG_OPL);
+    config_set_t *configOPL = configGetByType(CONFIG_WOPL);
 
     // Set current values
     configGetStrCopy(configOPL, CONFIG_OPL_PARENTAL_LOCK_PWD, password, CONFIG_KEY_VALUE_LEN); // This will return the current password, or a blank string if it is not set.
@@ -1747,7 +1747,7 @@ int guiConfirmVideoMode(void)
 
     sfxPlay(SFX_MESSAGE);
 
-    timeEnd = clock() + OPL_VMODE_CHANGE_CONFIRMATION_TIMEOUT_MS * (CLOCKS_PER_SEC / 1000);
+    timeEnd = clock() + WOPL_VMODE_CHANGE_CONFIRMATION_TIMEOUT_MS * (CLOCKS_PER_SEC / 1000);
     while (!terminate) {
         guiStartFrame();
 

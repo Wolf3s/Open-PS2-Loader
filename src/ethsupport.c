@@ -434,7 +434,7 @@ void ethInit(item_list_t *itemList)
         ethModifiedDVDPrev = 0;
         ethGameCount = 0;
         ethGames = NULL;
-        configGetInt(configGetByType(CONFIG_OPL), "eth_frames_delay", &ethGameList.delay);
+        configGetInt(configGetByType(CONFIG_WOPL), "eth_frames_delay", &ethGameList.delay);
         gNetworkStartup = ERROR_ETH_NOT_STARTED;
         ioPutRequest(IO_CUSTOM_SIMPLEACTION, &smbLoadModules);
         ethGameList.enabled = 1;

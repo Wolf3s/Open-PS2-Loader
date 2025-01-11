@@ -8,12 +8,12 @@ DATE=$(date +'%d %B %Y')
 CURRENT_DIR=$(pwd)
 BUILD_DIR="$(pwd)/tmp/OPL_LANG"
 LANG_LIST="$(pwd)/tmp/OPL_LANG_LIST"
-make oplversion 2>/dev/null
+make woplversion 2>/dev/null
 if [ $? == "0" ]
 then
-	export OPL_VERSION=$(make oplversion)
+	export WOPL_VERSION=$(make woplversion)
 else
-	echo "Falling back to old OPL Lang Pack"
+	echo "Falling back to old wOPL Lang Pack"
 	VERSION=$(grep "VERSION =" < "${CURRENT_DIR}/Makefile" | head -1 | cut -d " " -f 3)
 	SUBVERSION=$(grep "SUBVERSION =" < "${CURRENT_DIR}/Makefile" | head -1 | cut -d " " -f 3)
 	PATCHLEVEL=$(grep "PATCHLEVEL =" < "${CURRENT_DIR}/Makefile" | head -1 | cut -d " " -f 3)
@@ -22,7 +22,7 @@ else
 	if [ "${EXTRAVERSION}" != "" ]; then EXTRAVERSION=-${EXTRAVERSION}; fi
 	GIT_HASH=$(git -C "${CURRENT_DIR}/" rev-parse --short=7 HEAD 2>/dev/null)
 	if [ "${GIT_HASH}" != "" ]; then GIT_HASH=-${GIT_HASH}; fi
-	export OPL_VERSION=${VERSION}.${SUBVERSION}.${PATCHLEVEL}.${REVISION}${EXTRAVERSION}${GIT_HASH}
+	export WOPL_VERSION=${VERSION}.${SUBVERSION}.${PATCHLEVEL}.${REVISION}${EXTRAVERSION}${GIT_HASH}
 fi
 
 # Print a list
@@ -34,14 +34,14 @@ cd "${CURRENT_DIR}"
 # Copy format
 while IFS= read -r CURRENT_FILE
 do
-	mkdir -p "${BUILD_DIR}/${CURRENT_FILE}-${OPL_VERSION}/"
-	cp "${CURRENT_DIR}/lng/lang_${CURRENT_FILE}.lng" "${BUILD_DIR}/${CURRENT_FILE}-${OPL_VERSION}/lang_${CURRENT_FILE}.lng"
+	mkdir -p "${BUILD_DIR}/${CURRENT_FILE}-${WOPL_VERSION}/"
+	cp "${CURRENT_DIR}/lng/lang_${CURRENT_FILE}.lng" "${BUILD_DIR}/${CURRENT_FILE}-${WOPL_VERSION}/lang_${CURRENT_FILE}.lng"
 	if [ -e "lng_src/thirdparty/font_${CURRENT_FILE}.ttf" ]
 	then
-		cp "${CURRENT_DIR}/lng_src/thirdparty/font_${CURRENT_FILE}.ttf" "${BUILD_DIR}/${CURRENT_FILE}-${OPL_VERSION}/font_${CURRENT_FILE}.ttf"
+		cp "${CURRENT_DIR}/lng_src/thirdparty/font_${CURRENT_FILE}.ttf" "${BUILD_DIR}/${CURRENT_FILE}-${WOPL_VERSION}/font_${CURRENT_FILE}.ttf"
 	elif [ -e "lng_src/thirdparty/font_${CURRENT_FILE}.otf" ]
 	then
-		cp "${CURRENT_DIR}/lng_src/thirdparty/font_${CURRENT_FILE}.otf" "${BUILD_DIR}/${CURRENT_FILE}-${OPL_VERSION}/font_${CURRENT_FILE}.otf"
+		cp "${CURRENT_DIR}/lng_src/thirdparty/font_${CURRENT_FILE}.otf" "${BUILD_DIR}/${CURRENT_FILE}-${WOPL_VERSION}/font_${CURRENT_FILE}.otf"
 	fi
 done < ${LANG_LIST}
 
@@ -57,28 +57,28 @@ done < ${LANG_LIST}
 Open PS2 Loader Official Translations (${DATE})
 
 HOW TO INSTALL:
-1. make sure you are running latest OPL
-2. transfer both the the LANGUAGE FILE (.lng) and the FONT FILE (.ttf/.otf) into your OPL directory of your memory card
+1. make sure you are running latest wOPL
+2. transfer both the the LANGUAGE FILE (.lng) and the FONT FILE (.ttf/.otf) into your wOPL directory of your memory card
  a. IMPORTANT: Do not rename the files
  b. NOTE: Some languages don't require a FONT file, so it won't be included
-3. run OPL
-4. go to OPL Settings
+3. run wOPL
+4. go to wOPL Settings
 5. open the Display settings page
 6. select your new language file
 7. press Ok at the bottom of the page
-8. then save your settings so next time you run OPL, it will load it with your preferred language file
+8. then save your settings so next time you run wOPL, it will load it with your preferred language file
 9. done!
 EOF
 
 # Lets pack it!
 cd ${BUILD_DIR}/
-zip -r "${CURRENT_DIR}/OPNPS2LD-LANGS-${OPL_VERSION}.zip" ./*
-if [ -f "${CURRENT_DIR}/OPNPS2LD-LANGS-${OPL_VERSION}.zip" ]
-	then echo "OPL Lang Package Complete: OPNPS2LD-LANGS-${OPL_VERSION}.zip"
-	else echo "OPL Lang Package not found!"
+zip -r "${CURRENT_DIR}/OPNPS2LD-LANGS-${WOPL_VERSION}.zip" ./*
+if [ -f "${CURRENT_DIR}/OPNPS2LD-LANGS-${WOPL_VERSION}.zip" ]
+	then echo "wOPL Lang Package Complete: OPNPS2LD-LANGS-${WOPL_VERSION}.zip"
+	else echo "wOPL Lang Package not found!"
 fi
 
 # Cleanup
 cd "${CURRENT_DIR}"
 rm -rf ${BUILD_DIR}/ ${LANG_LIST}
-unset CURRENT_DIR BUILD_DIR LANG_LIST OPL_VERSION CURRENT_FILE
+unset CURRENT_DIR BUILD_DIR LANG_LIST WOPL_VERSION CURRENT_FILE

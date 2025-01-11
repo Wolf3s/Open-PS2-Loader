@@ -14,8 +14,8 @@
 #define HINT_HEIGHT    32
 #define DECORATOR_SIZE 20
 
-extern const char conf_theme_OPL_cfg;
-extern u16 size_conf_theme_OPL_cfg;
+extern const char conf_theme_wOPL_cfg;
+extern u16 size_conf_theme_wOPL_cfg;
 
 theme_t *gTheme;
 
@@ -1273,7 +1273,7 @@ static void thmLoad(const char *themePath)
     if (!themePath) {
         // No theme specified. Prepare and load the default theme.
         themeConfig = configAlloc(0, NULL, NULL);
-        configReadBuffer(themeConfig, &conf_theme_OPL_cfg, size_conf_theme_OPL_cfg);
+        configReadBuffer(themeConfig, &conf_theme_wOPL_cfg, size_conf_theme_wOPL_cfg);
     } else {
         snprintf(path, sizeof(path), "%sconf_theme.cfg", themePath);
         themeConfig = configAlloc(0, NULL, path);
@@ -1395,7 +1395,7 @@ static void thmRebuildGuiNames(void)
     guiThemesNames = (const char **)malloc((nThemes + 2) * sizeof(char **));
 
     // add default internal
-    guiThemesNames[0] = "<OPL>";
+    guiThemesNames[0] = "<wOPL>";
 
     int i = 0;
     for (; i < nThemes; i++) {
@@ -1414,7 +1414,7 @@ int thmAddElements(char *path, const char *separator, int forceRefresh)
     thmRebuildGuiNames();
 
     const char *temp;
-    if (configGetStr(configGetByType(CONFIG_OPL), "theme", &temp)) {
+    if (configGetStr(configGetByType(CONFIG_WOPL), "theme", &temp)) {
         LOG("THEMES Trying to set again theme: %s\n", temp);
         if (thmSetGuiValue(thmFindGuiID(temp), 0) && forceRefresh) {
             for (i = 0; i < MODE_COUNT; i++)

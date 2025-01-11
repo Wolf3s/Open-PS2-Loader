@@ -5,7 +5,7 @@
     The original code used libmc and was also designed to allow the host software (the browser) access the history.
     (the browser's boot animation would vary according to the user's play history)
 
-    However, OPL does not need any of that, so it can be made simpler.    */
+    However, wOPL does not need any of that, so it can be made simpler.    */
 
 #include <errno.h>
 #include <kernel.h>
@@ -154,7 +154,7 @@ int AddHistoryRecord(const char *name)
     if ((result = LoadHistoryFile(path, HistoryEntries)) != 0) {
         DEBUG_PRINTF("\tcan't load history file.\n");
         SystemRegionLetter = GetSystemFolderLetter();
-        if (SystemRegionLetter == 'R') { // @El_isra: R is the default prefix on OPL and FreeMcBoot code, however, no known ps2 uses this prefix for system folders. So skip creating a folder named like that
+        if (SystemRegionLetter == 'R') { // @El_isra: R is the default prefix on wOPL and FreeMcBoot code, however, no known ps2 uses this prefix for system folders. So skip creating a folder named like that
             DEBUG_PRINTF("\n\tERROR: SystemRegionLetter is R\n\n");
             return -2;
         }

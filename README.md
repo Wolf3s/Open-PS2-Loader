@@ -68,8 +68,8 @@ USB modes:
 
 wOPL will automatically create the above directory structure the first time you launch it and enable your favorite device.
 
-For HDD users, wOPL will read `hdd0:__common/OPL/conf_hdd.cfg` for the config entry `hdd_partition` to use as your wOPL partition.
-If not found a config file, a 128Mb `+OPL` partition will be created. You can edit the config if you wish to use/create a different partition.
+For HDD users, wOPL will read `hdd0:__common/WOPL/conf_hdd.cfg` for the config entry `hdd_partition` to use as your wOPL partition.
+If not found a config file, a 128Mb `+WOPL` partition will be created. You can edit the config if you wish to use/create a different partition.
 All partitions created by wOPL will be 128Mb (it is not recommended to enlarge partitions as it will break LBAs, instead remove and recreate manually with uLaunchELF at a larger size if needed).
 
 </p>

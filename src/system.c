@@ -1007,7 +1007,7 @@ void sysLaunchLoaderElf(const char *filename, const char *mode_str, int size_cdv
     }
 #endif
 
-    LOG("Leaving OPL GUI, starting eecore = 0x%08X \n", (u32)eh->entry);
+    LOG("Leaving wOPL GUI, starting eecore = 0x%08X \n", (u32)eh->entry);
 
     // Let's go.
     fileXioExit();

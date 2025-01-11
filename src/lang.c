@@ -159,7 +159,7 @@ int lngAddLanguages(char *path, const char *separator, int mode)
     lngRebuildLangNames();
 
     const char *temp;
-    if (configGetStr(configGetByType(CONFIG_OPL), "language_text", &temp)) {
+    if (configGetStr(configGetByType(CONFIG_WOPL), "language_text", &temp)) {
         if (lngSetGuiValue(lngFindGuiID(temp)))
             moduleUpdateMenu(mode, 0, 1);
     }

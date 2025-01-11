@@ -20,11 +20,11 @@ static u32 currentUID = 0;
 static config_set_t configFiles[CONFIG_INDEX_COUNT];
 static char legacyNetConfigPath[256] = "mc?:SYS-CONF/IPCONFIG.DAT";
 static const char *configFilenames[CONFIG_INDEX_COUNT] = {
-    "conf_opl.cfg",
-    "conf_last.cfg",
-    "conf_apps.cfg",
-    "conf_network.cfg",
-    "conf_game.cfg",
+    "conf_wopl.cfg",
+    "conf_wlast.cfg",
+    "conf_wapps.cfg",
+    "conf_wnetwork.cfg",
+    "conf_wgame.cfg",
 };
 
 static int strToColor(const char *string, unsigned char *color)
