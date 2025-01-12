@@ -2,12 +2,13 @@
 # Lang Packer for Open-PS2-Loader
 # Made by Caio99BR <caiooliveirafarias0@gmail.com>
 # Reworked by Doctor Q <Dr-Q@users.noreply.github.com>
+# Update for wOPL by Wolf3s <andregui17@outlook.com>
 
 # Set variables
 DATE=$(date +'%d %B %Y')
 CURRENT_DIR=$(pwd)
-BUILD_DIR="$(pwd)/tmp/OPL_LANG"
-LANG_LIST="$(pwd)/tmp/OPL_LANG_LIST"
+BUILD_DIR="$(pwd)/tmp/WOPL_LANG"
+LANG_LIST="$(pwd)/tmp/WOPL_LANG_LIST"
 make woplversion 2>/dev/null
 if [ $? == "0" ]
 then
@@ -48,13 +49,13 @@ done < ${LANG_LIST}
 (cat << EOF) > ${BUILD_DIR}/README
 -----------------------------------------------------------------------------
 
-  Copyright 2009-2010, Ifcaro & jimmikaelkael
+  Copyright 2025, Wolf3s
   Licenced under Academic Free License version 3.0
-  Review Open PS2 Loader README & LICENSE files for further details.
+  Review w-Open PS2 Loader README & LICENSE files for further details.
 
 -----------------------------------------------------------------------------
 
-Open PS2 Loader Official Translations (${DATE})
+w-Open PS2 Loader Official Translations (${DATE})
 
 HOW TO INSTALL:
 1. make sure you are running latest wOPL
@@ -72,9 +73,9 @@ EOF
 
 # Lets pack it!
 cd ${BUILD_DIR}/
-zip -r "${CURRENT_DIR}/OPNPS2LD-LANGS-${WOPL_VERSION}.zip" ./*
-if [ -f "${CURRENT_DIR}/OPNPS2LD-LANGS-${WOPL_VERSION}.zip" ]
-	then echo "wOPL Lang Package Complete: OPNPS2LD-LANGS-${WOPL_VERSION}.zip"
+zip -r "${CURRENT_DIR}/WOPNPS2LD-LANGS-${WOPL_VERSION}.zip" ./*
+if [ -f "${CURRENT_DIR}/WOPNPS2LD-LANGS-${WOPL_VERSION}.zip" ]
+	then echo "wOPL Lang Package Complete: WOPNPS2LD-LANGS-${WOPL_VERSION}.zip"
 	else echo "wOPL Lang Package not found!"
 fi
 
