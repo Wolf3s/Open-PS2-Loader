@@ -2,7 +2,7 @@
 # Lang Packer for Open-PS2-Loader
 # Made by Caio99BR <caiooliveirafarias0@gmail.com>
 # Reworked by Doctor Q <Dr-Q@users.noreply.github.com>
-# Update for wOPL by Wolf3s <andregui17@outlook.com>
+# Update for wOPL by André "Wolf3s" Guilherme <andregui17@outlook.com>
 
 # Set variables
 DATE=$(date +'%d %B %Y')
