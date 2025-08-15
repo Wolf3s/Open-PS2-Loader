@@ -183,7 +183,7 @@ jobs:
 
     - name: Prepare artifacts for release
       run: |
-        echo packing release of OPL ${{ env.WOPL_VERSION }}
+        echo packing release of WOPL ${{ env.WOPL_VERSION }}
         cp INFO/* WOPNPS2LD/
         cp INFO/* WOPNPS2LD-VARIANTS/
         7z a -t7z WOPNPS2LD-${{ env.WOPL_VERSION }}.7z WOPNPS2LD/*
