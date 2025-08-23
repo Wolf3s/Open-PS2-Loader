@@ -869,6 +869,24 @@ static void drawItemsList(struct menu_list *menu, struct submenu_list *item, con
             } else
                 fntRenderString(elem->font, elem->posX, posY, elem->aligned, elem->width, elem->height, submenuItemGetText(&ps->item), color);
 
+            if (ps->item.favourited) {
+                int favMarkX = posX;
+                int favMarkPosY = elem->aligned ? (posY - 4) : (posY + 5);
+                int textWidth = rmUnScaleX(fntCalcDimensions(elem->font, submenuItemGetText(&ps->item)));
+
+                if (elem->aligned)
+                    favMarkX += ((elem->width - textWidth) >> 1);
+
+                favMarkX += textWidth;
+
+                if (itemsList->decoratorImage)
+                    favMarkX += DECORATOR_SIZE;
+
+                GSTEXTURE *favMark = thmGetTexture(FAV_MARK);
+                if (favMark && favMark->Mem)
+                    rmDrawPixmap(favMark, favMarkX + 2, favMarkPosY, ALIGN_NONE, 8, 8, elem->scaled, gDefaultCol);
+            }
+
             posY += MENU_ITEM_HEIGHT;
             ps = ps->next;
         }

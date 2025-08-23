@@ -478,8 +478,10 @@ int guiDeviceTypeToIoMode(int deviceType)
         return ETH_MODE;
     else if (deviceType == 2)
         return HDD_MODE;
-    else
+    else if (deviceType == 3)
         return APP_MODE;
+    else
+        return FAV_MODE;
 }
 
 int guiIoModeToDeviceType(int ioMode)
@@ -497,6 +499,8 @@ int guiIoModeToDeviceType(int ioMode)
             return 2;
         case APP_MODE:
             return 3;
+        case FAV_MODE:
+            return 4;
         default:
             return 0;
     }
@@ -505,7 +509,7 @@ int guiIoModeToDeviceType(int ioMode)
 void guiShowConfig()
 {
     // configure the enumerations
-    const char *deviceNames[] = {_l(_STR_BDM_GAMES), _l(_STR_NET_GAMES), _l(_STR_HDD_GAMES), _l(_STR_APPS), NULL};
+    const char *deviceNames[] = {_l(_STR_BDM_GAMES), _l(_STR_NET_GAMES), _l(_STR_HDD_GAMES), _l(_STR_APPS), _l(_STR_FAV), NULL};
     const char *deviceModes[] = {_l(_STR_OFF), _l(_STR_MANUAL), _l(_STR_AUTO), NULL};
 
     diaSetEnum(diaConfig, CFG_DEFDEVICE, deviceNames);
@@ -513,6 +517,7 @@ void guiShowConfig()
     diaSetEnum(diaConfig, CFG_HDDMODE, deviceModes);
     diaSetEnum(diaConfig, CFG_ETHMODE, deviceModes);
     diaSetEnum(diaConfig, CFG_APPMODE, deviceModes);
+    diaSetEnum(diaConfig, CFG_FAVMODE, deviceModes);
 
     diaSetInt(diaConfig, CFG_BDMCACHE, bdmCacheSize);
     diaSetInt(diaConfig, CFG_HDDCACHE, hddCacheSize);
@@ -539,6 +544,7 @@ void guiShowConfig()
     diaSetInt(diaConfig, CFG_HDDMODE, gHDDStartMode);
     diaSetInt(diaConfig, CFG_ETHMODE, gETHStartMode);
     diaSetInt(diaConfig, CFG_APPMODE, gAPPStartMode);
+    diaSetInt(diaConfig, CFG_FAVMODE, gFAVStartMode);
 
     int ret = diaExecuteDialog(diaConfig, -1, 1, &guiUpdater);
     if (ret) {
@@ -1006,7 +1012,7 @@ static void guiHandleOp(struct gui_update_t *item)
             break;
 
         case GUI_OP_APPEND_MENU:
-            result = submenuAppendItem(item->menu.subMenu, item->submenu.icon_id, item->submenu.text, item->submenu.id, item->submenu.text_id);
+            result = submenuAppendItem(item->menu.subMenu, item->submenu.icon_id, item->submenu.text, item->submenu.id, item->submenu.text_id, item->submenu.owner);
             if (!item->menu.menu->submenu) { // first subitem in list
                 item->menu.menu->submenu = result;
                 if (!item->submenu.selected) {

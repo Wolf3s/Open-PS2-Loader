@@ -70,7 +70,7 @@ gui_strings:
 - label: NET_GAMES
   string: ETH Games
 - label: APPS
-  string: Apps
+  string: Applications
 - label: THEME
   string: Theme
 - label: LANGUAGE
@@ -694,3 +694,11 @@ gui_strings:
   string: Cheat Selection
 - label: HDD_HINT
   string: Only one HDD allowed, enabling locks APA or GPT.
+- label: FAV
+  string: Favourites
+- label: FAVMODE
+  string: Favourites Start Mode
+- label: FAV_HINT
+  string: Favourite
+- label: FAV_MSG
+  string: "%s not allowed through Favourites Menu."
