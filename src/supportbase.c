@@ -347,7 +347,6 @@ static int scanForISO(char *path, char type, struct game_list_t **glist)
                     fileXioUmount("iso:");
                     *glist = next->next;
                     free(next);
-                    next = NULL;
                     continue;
                 }
 
